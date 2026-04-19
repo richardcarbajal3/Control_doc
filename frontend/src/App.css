@@ -35,7 +35,7 @@ body {
 
 /* Main */
 .main {
-  max-width: 1100px;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 1.5rem;
 }
@@ -43,7 +43,8 @@ body {
 /* Toolbar */
 .toolbar {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 1.5rem;
   align-items: center;
 }
@@ -77,6 +78,17 @@ body {
 
 .btn:hover {
   opacity: 0.9;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .btn-primary {
@@ -190,7 +202,48 @@ tr:hover {
   padding: 2rem;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-wide {
+  max-width: 760px;
+}
+
+.import-summary {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.import-summary li {
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.import-errors {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.import-errors h3 {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.import-errors ul {
+  list-style: disc;
+  padding-left: 1.2rem;
+  font-size: 0.8rem;
+  color: #7f1d1d;
 }
 
 .modal h2 {
@@ -215,7 +268,8 @@ tr:hover {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border: 1px solid #d1d5db;
@@ -223,10 +277,13 @@ tr:hover {
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.2s;
+  font-family: inherit;
+  resize: vertical;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
   border-color: #1e3a5f;
   box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }

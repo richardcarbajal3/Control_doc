@@ -44,3 +44,17 @@ export async function deleteDocument(id) {
   if (!res.ok) throw new Error('Error al eliminar documento');
   return res.json();
 }
+
+export const exportUrl = `${API_URL}/export`;
+export const templateUrl = `${API_URL}/template`;
+
+export async function importDocuments(file) {
+  const body = new FormData();
+  body.append('file', file);
+  const res = await fetch(`${API_URL}/import`, { method: 'POST', body });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al importar documentos');
+  }
+  return data;
+}

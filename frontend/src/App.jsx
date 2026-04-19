@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DocumentList from './components/DocumentList';
 import DocumentForm from './components/DocumentForm';
 import {
@@ -6,6 +6,9 @@ import {
   createDocument,
   updateDocument,
   deleteDocument,
+  importDocuments,
+  exportUrl,
+  templateUrl,
 } from './api/documents';
 
 export default function App() {
@@ -14,6 +17,9 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [importResult, setImportResult] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -60,6 +66,26 @@ export default function App() {
     setEditingDoc(null);
   };
 
+  const handlePickFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    try {
+      const result = await importDocuments(file);
+      setImportResult(result);
+      fetchDocuments();
+    } catch (err) {
+      setImportResult({ error: err.message });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="app">
       <header className="header">
@@ -72,16 +98,36 @@ export default function App() {
           <input
             type="text"
             className="search-input"
-            placeholder="Buscar por código o título..."
+            placeholder="Buscar por código, título, disciplina, tipo o responsable..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <a className="btn btn-secondary" href={templateUrl}>
+            Plantilla
+          </a>
+          <button
+            className="btn btn-secondary"
+            onClick={handlePickFile}
+            disabled={importing}
+          >
+            {importing ? 'Importando…' : 'Importar Excel'}
+          </button>
+          <a className="btn btn-secondary" href={exportUrl}>
+            Exportar Excel
+          </a>
           <button
             className="btn btn-primary"
             onClick={() => { setEditingDoc(null); setShowForm(true); }}
           >
             + Nuevo Documento
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
         </div>
 
         {loading ? (
@@ -101,6 +147,45 @@ export default function App() {
           onSave={handleSave}
           onCancel={handleCancel}
         />
+      )}
+
+      {importResult && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Resultado de la importación</h2>
+            {importResult.error ? (
+              <div className="form-error">{importResult.error}</div>
+            ) : (
+              <>
+                <ul className="import-summary">
+                  <li><strong>Creados:</strong> {importResult.created}</li>
+                  <li><strong>Actualizados:</strong> {importResult.updated}</li>
+                  <li><strong>Con errores:</strong> {importResult.errors?.length || 0}</li>
+                </ul>
+                {importResult.errors?.length > 0 && (
+                  <div className="import-errors">
+                    <h3>Errores</h3>
+                    <ul>
+                      {importResult.errors.slice(0, 20).map((e, i) => (
+                        <li key={i}>
+                          Fila {e.row}{e.code ? ` (${e.code})` : ''}: {e.error}
+                        </li>
+                      ))}
+                      {importResult.errors.length > 20 && (
+                        <li>… y {importResult.errors.length - 20} más</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
+            <div className="form-actions">
+              <button className="btn btn-primary" onClick={() => setImportResult(null)}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
