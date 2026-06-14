@@ -98,36 +98,61 @@ control_doc/
 
 ### 3. Contratos
 
-**Objetivo:** Gestionar el ciclo de vida contractual: registro, monitoreo de montos, estados, plazos y partes involucradas.
+**Objetivo:** Gestionar el ciclo de vida contractual: registro, monitoreo de montos, estados, plazos y partes involucradas. Es el eje central del sistema: Correspondencia, Documentos y Claims se articulan alrededor de este módulo.
+
+> Diseño detallado en [`docs/modules/CONTRACTS.md`](./modules/CONTRACTS.md)
 
 **Entidad principal:** `contracts`
+
+**Campos obligatorios**
 
 | Campo | Tipo | Descripción |
 |---|---|---|
 | `id` | SERIAL PK | Identificador interno |
-| `code` | VARCHAR(50) UNIQUE | Código / número de contrato |
-| `titulo` | VARCHAR(255) | Descripción corta del contrato |
-| `tipo` | VARCHAR(50) | Obra / Suministro / Servicios / Consultoría |
+| `code` | VARCHAR(50) UNIQUE | Código / número oficial del contrato |
+| `titulo` | VARCHAR(255) | Descripción corta del objeto del contrato |
+| `tipo` | VARCHAR(50) | Ver catálogo de tipos abajo |
 | `project_id` | INTEGER FK | Proyecto al que pertenece |
-| `contratista_id` | INTEGER FK | Empresa contratista |
-| `mandante_id` | INTEGER FK | Empresa mandante |
-| `monto_original` | NUMERIC(18,2) | Monto contractual original |
-| `moneda` | VARCHAR(10) | PEN / USD / EUR |
-| `fecha_firma` | DATE | Fecha de firma del contrato |
+| `contratista_id` | INTEGER FK | Empresa que ejecuta |
+| `mandante_id` | INTEGER FK | Empresa que encarga |
+| `monto_original` | NUMERIC(18,2) | Monto contractual pactado en la firma |
+| `moneda` | VARCHAR(10) | `PEN` / `USD` / `EUR` |
+| `fecha_firma` | DATE | Fecha de suscripción |
 | `fecha_inicio` | DATE | Fecha de inicio de actividades |
-| `fecha_fin` | DATE | Fecha de término contractual |
-| `fecha_fin_real` | DATE | Fecha de término real (si difiere) |
-| `estado` | VARCHAR(30) | Borrador / Vigente / En Liquidación / Cerrado / Rescindido |
-| `descripcion` | TEXT | Alcance del contrato |
-| `created_at` | TIMESTAMP | |
-| `updated_at` | TIMESTAMP | |
+| `fecha_fin` | DATE | Fecha de término contractual pactada |
+| `estado` | VARCHAR(30) | Ver catálogo de estados abajo |
+
+**Campos opcionales destacados**
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `monto_actualizado` | NUMERIC(18,2) | Monto vigente tras adicionales o deducciones |
+| `fecha_fin_real` | DATE | Término real (puede diferir por ampliaciones) |
+| `plazo_dias` | INTEGER | Duración en días calendario |
+| `retencion_garantia` | NUMERIC(5,2) | % retenido como garantía de correcta ejecución |
+| `permite_adicionales` | BOOLEAN | Si el contrato admite adicionales de obra |
+| `limite_adicionales_pct` | NUMERIC(5,2) | % máximo permitido como adicionales |
+| `tiene_penalidad_mora` | BOOLEAN | Si hay penalidad por retraso |
+| `penalidad_diaria_pct` | NUMERIC(5,2) | % del monto por día de retraso |
+| `descripcion` | TEXT | Alcance detallado |
+
+**Tipos de contrato:** `Obra` / `Suministro` / `Servicios` / `Consultoría` / `EPC` / `Mixto` / `Marco`
+
+**Estados y flujo:**
+```
+Borrador → Vigente → En Ejecución → En Liquidación → Cerrado
+                   ↘                               ↗
+                    Suspendido → (reactivable)
+                   ↘
+                    Rescindido (terminal)
+```
 
 **Relaciones:**
-- Pertenece a un proyecto (`project_id`)
-- Vincula dos empresas: contratista y mandante
-- Puede tener múltiples documentos adjuntos
-- Puede tener múltiples registros de correspondencia asociados
-- Claims (Fase 2) se vincularán a este módulo
+- Pertenece a exactamente un proyecto (`project_id`)
+- Vincula dos empresas distintas: `contratista_id` y `mandante_id` (no pueden ser la misma)
+- Puede tener múltiples documentos adjuntos (`contract_id` en `documents`)
+- Puede tener múltiples registros de correspondencia (`contract_id` en `correspondence`)
+- Claims (Fase 2) se vincularán a este módulo; los campos de monto, plazo y penalidad son su base de cálculo
 
 ---
 
