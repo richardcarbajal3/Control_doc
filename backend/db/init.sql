@@ -56,3 +56,21 @@ CREATE TABLE IF NOT EXISTS documents (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS correspondence (
+  id SERIAL PRIMARY KEY,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  correspondence_type VARCHAR(50) NOT NULL DEFAULT 'Carta',
+  direction VARCHAR(20) NOT NULL DEFAULT 'Saliente',
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE RESTRICT,
+  contract_id INTEGER REFERENCES contracts(id) ON DELETE SET NULL,
+  sender_company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE RESTRICT,
+  receiver_company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE RESTRICT,
+  issue_date DATE NOT NULL,
+  due_date DATE,
+  status VARCHAR(30) NOT NULL DEFAULT 'Pendiente',
+  description TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);

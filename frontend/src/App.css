@@ -195,6 +195,13 @@ tr:hover {
   padding: 0.2rem 0.75rem;
 }
 
+.badge-green  { background: #16a34a; }
+.badge-gray   { background: #6b7280; }
+.badge-amber  { background: #d97706; }
+.badge-red    { background: #dc2626; }
+.badge-blue   { background: #2563eb; }
+.badge-purple { background: #7c3aed; }
+
 /* Empty / Loading */
 .empty-state,
 .loading {

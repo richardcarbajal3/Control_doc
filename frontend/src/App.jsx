@@ -8,17 +8,21 @@ import ProjectList from './components/ProjectList';
 import ProjectForm from './components/ProjectForm';
 import ContractList from './components/ContractList';
 import ContractForm from './components/ContractForm';
+import CorrespondenceList from './components/CorrespondenceList';
+import CorrespondenceForm from './components/CorrespondenceForm';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
 import { getProjects, createProject, updateProject, deleteProject } from './api/projects';
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
+import { getCorrespondence, createCorrespondence, updateCorrespondence, deleteCorrespondence } from './api/correspondence';
 
 const TABS = [
   { key: 'documents', label: 'Documentos' },
   { key: 'companies', label: 'Empresas' },
   { key: 'projects', label: 'Proyectos' },
   { key: 'contracts', label: 'Contratos' },
+  { key: 'correspondence', label: 'Correspondencia' },
 ];
 
 function useModule(fetchFn, deps = []) {
@@ -50,6 +54,7 @@ export default function App() {
   const companies = useModule(getCompanies);
   const projects = useModule(getProjects);
   const contracts = useModule(getContracts);
+  const correspondence = useModule(getCorrespondence);
 
   const openCreate = () => { setDeleteError(''); setEditing(null); setShowForm(true); };
   const openEdit = (item) => { setDeleteError(''); setEditing(item); setShowForm(true); };
@@ -103,14 +108,27 @@ export default function App() {
     }
   };
 
-  const tabConfig = {
-    documents: { label: 'Documento', searchPlaceholder: 'Buscar por código o título...' },
-    companies: { label: 'Empresa', searchPlaceholder: 'Buscar por RUC o razón social...' },
-    projects: { label: 'Proyecto', searchPlaceholder: 'Buscar por código o nombre...' },
-    contracts: { label: 'Contrato', searchPlaceholder: 'Buscar por código o título...' },
+  const handleSaveCorrespondence = async (data) => {
+    if (editing) await updateCorrespondence(editing.id, data);
+    else await createCorrespondence(data);
+    closeForm(); correspondence.refresh();
+  };
+  const handleDeleteCorrespondence = async (c) => {
+    if (window.confirm(`¿Eliminar la correspondencia "${c.code} — ${c.subject}"?`)) {
+      try { await deleteCorrespondence(c.id); correspondence.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
   };
 
-  const activeModule = { documents: docs, companies, projects, contracts }[tab];
+  const tabConfig = {
+    documents:      { label: 'Documento',       searchPlaceholder: 'Buscar por código o título...' },
+    companies:      { label: 'Empresa',          searchPlaceholder: 'Buscar por RUC o razón social...' },
+    projects:       { label: 'Proyecto',         searchPlaceholder: 'Buscar por código o nombre...' },
+    contracts:      { label: 'Contrato',         searchPlaceholder: 'Buscar por código o título...' },
+    correspondence: { label: 'Correspondencia',  searchPlaceholder: 'Buscar por código o asunto...' },
+  };
+
+  const activeModule = { documents: docs, companies, projects, contracts, correspondence }[tab];
   const cfg = tabConfig[tab];
 
   return (
@@ -169,6 +187,9 @@ export default function App() {
             {tab === 'contracts' && (
               <ContractList contracts={contracts.items} onEdit={openEdit} onDelete={handleDeleteContract} />
             )}
+            {tab === 'correspondence' && (
+              <CorrespondenceList items={correspondence.items} onEdit={openEdit} onDelete={handleDeleteCorrespondence} />
+            )}
           </>
         )}
       </main>
@@ -193,6 +214,16 @@ export default function App() {
           projects={projects.items}
           companies={companies.items}
           onSave={handleSaveContract}
+          onCancel={closeForm}
+        />
+      )}
+      {showForm && tab === 'correspondence' && (
+        <CorrespondenceForm
+          item={editing}
+          projects={projects.items}
+          contracts={contracts.items}
+          companies={companies.items}
+          onSave={handleSaveCorrespondence}
           onCancel={closeForm}
         />
       )}
