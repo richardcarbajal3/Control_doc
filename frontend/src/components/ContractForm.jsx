@@ -89,7 +89,7 @@ export default function ContractForm({ contract, projects, companies, onSave, on
           <div className="form-row">
             <div className="form-group">
               <label>Monto Original</label>
-              <input type="number" step="0.01" value={form.monto_original} onChange={set('monto_original')} />
+              <input type="number" step="0.01" min="0" value={form.monto_original} onChange={set('monto_original')} />
             </div>
             <div className="form-group">
               <label>Moneda</label>

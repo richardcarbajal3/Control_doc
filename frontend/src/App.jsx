@@ -44,14 +44,15 @@ export default function App() {
   const [tab, setTab] = useState('documents');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
 
   const docs = useModule(getDocuments);
   const companies = useModule(getCompanies);
   const projects = useModule(getProjects);
   const contracts = useModule(getContracts);
 
-  const openCreate = () => { setEditing(null); setShowForm(true); };
-  const openEdit = (item) => { setEditing(item); setShowForm(true); };
+  const openCreate = () => { setDeleteError(''); setEditing(null); setShowForm(true); };
+  const openEdit = (item) => { setDeleteError(''); setEditing(item); setShowForm(true); };
   const closeForm = () => { setShowForm(false); setEditing(null); };
 
   const handleSaveDoc = async (data) => {
@@ -60,7 +61,10 @@ export default function App() {
     closeForm(); docs.refresh();
   };
   const handleDeleteDoc = async (doc) => {
-    if (window.confirm(`¿Eliminar el documento "${doc.title}"?`)) { await deleteDocument(doc.id); docs.refresh(); }
+    if (window.confirm(`¿Eliminar el documento "${doc.title}"?`)) {
+      try { await deleteDocument(doc.id); docs.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
   };
 
   const handleSaveCompany = async (data) => {
@@ -69,7 +73,10 @@ export default function App() {
     closeForm(); companies.refresh();
   };
   const handleDeleteCompany = async (c) => {
-    if (window.confirm(`¿Eliminar la empresa "${c.razon_social}"?`)) { await deleteCompany(c.id); companies.refresh(); }
+    if (window.confirm(`¿Eliminar la empresa "${c.razon_social}"?`)) {
+      try { await deleteCompany(c.id); companies.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
   };
 
   const handleSaveProject = async (data) => {
@@ -78,7 +85,10 @@ export default function App() {
     closeForm(); projects.refresh();
   };
   const handleDeleteProject = async (p) => {
-    if (window.confirm(`¿Eliminar el proyecto "${p.name}"?`)) { await deleteProject(p.id); projects.refresh(); }
+    if (window.confirm(`¿Eliminar el proyecto "${p.name}"?`)) {
+      try { await deleteProject(p.id); projects.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
   };
 
   const handleSaveContract = async (data) => {
@@ -87,7 +97,10 @@ export default function App() {
     closeForm(); contracts.refresh();
   };
   const handleDeleteContract = async (c) => {
-    if (window.confirm(`¿Eliminar el contrato "${c.titulo}"?`)) { await deleteContract(c.id); contracts.refresh(); }
+    if (window.confirm(`¿Eliminar el contrato "${c.titulo}"?`)) {
+      try { await deleteContract(c.id); contracts.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
   };
 
   const tabConfig = {
@@ -132,6 +145,13 @@ export default function App() {
             + Nuevo {cfg.label}
           </button>
         </div>
+
+        {deleteError && (
+          <div className="alert-error">
+            {deleteError}
+            <button className="alert-close" onClick={() => setDeleteError('')}>✕</button>
+          </div>
+        )}
 
         {activeModule.loading ? (
           <div className="loading">Cargando...</div>

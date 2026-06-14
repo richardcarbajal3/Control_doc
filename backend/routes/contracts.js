@@ -56,6 +56,12 @@ router.post('/', async (req, res) => {
     fecha_fin_real, estado, descripcion
   } = req.body;
   if (!code || !titulo) return res.status(400).json({ error: 'Código y título son requeridos' });
+  if (contratista_id && mandante_id && String(contratista_id) === String(mandante_id))
+    return res.status(400).json({ error: 'El contratista y el mandante no pueden ser la misma empresa' });
+  if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin)
+    return res.status(400).json({ error: 'La fecha de inicio no puede ser posterior a la fecha de fin' });
+  if (monto_original != null && monto_original !== '' && Number(monto_original) < 0)
+    return res.status(400).json({ error: 'El monto original no puede ser negativo' });
   try {
     const result = await pool.query(
       `INSERT INTO contracts (code, titulo, tipo, project_id, contratista_id, mandante_id,
@@ -83,6 +89,12 @@ router.put('/:id', async (req, res) => {
     fecha_fin_real, estado, descripcion
   } = req.body;
   if (!code || !titulo) return res.status(400).json({ error: 'Código y título son requeridos' });
+  if (contratista_id && mandante_id && String(contratista_id) === String(mandante_id))
+    return res.status(400).json({ error: 'El contratista y el mandante no pueden ser la misma empresa' });
+  if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin)
+    return res.status(400).json({ error: 'La fecha de inicio no puede ser posterior a la fecha de fin' });
+  if (monto_original != null && monto_original !== '' && Number(monto_original) < 0)
+    return res.status(400).json({ error: 'El monto original no puede ser negativo' });
   try {
     const result = await pool.query(
       `UPDATE contracts SET code=$1, titulo=$2, tipo=$3, project_id=$4, contratista_id=$5,

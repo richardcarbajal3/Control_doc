@@ -4,6 +4,7 @@ const TIPOS = ['Minería', 'Construcción', 'EPC', 'Mixto'];
 const ESTADOS = ['Planificación', 'En Ejecución', 'Cerrado', 'Suspendido'];
 
 export default function ProjectForm({ project, companies, onSave, onCancel }) {
+  const mandantes = companies.filter((c) => c.tipo === 'Mandante');
   const [form, setForm] = useState({
     code: project?.code || '',
     name: project?.name || '',
@@ -60,8 +61,11 @@ export default function ProjectForm({ project, companies, onSave, onCancel }) {
               <label>Empresa Mandante</label>
               <select value={form.company_id} onChange={set('company_id')}>
                 <option value="">— Sin empresa —</option>
-                {companies.map((c) => <option key={c.id} value={c.id}>{c.razon_social}</option>)}
+                {mandantes.map((c) => <option key={c.id} value={c.id}>{c.razon_social}</option>)}
               </select>
+              {mandantes.length === 0 && (
+                <span className="field-hint">No hay empresas de tipo Mandante registradas.</span>
+              )}
             </div>
           </div>
           <div className="form-row">

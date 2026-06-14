@@ -41,6 +41,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const { code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id } = req.body;
   if (!code || !name) return res.status(400).json({ error: 'Código y nombre son requeridos' });
+  if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin)
+    return res.status(400).json({ error: 'La fecha de inicio no puede ser posterior a la fecha de fin' });
   try {
     const result = await pool.query(
       `INSERT INTO projects (code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id)
@@ -58,6 +60,8 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const { code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id } = req.body;
   if (!code || !name) return res.status(400).json({ error: 'Código y nombre son requeridos' });
+  if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin)
+    return res.status(400).json({ error: 'La fecha de inicio no puede ser posterior a la fecha de fin' });
   try {
     const result = await pool.query(
       `UPDATE projects SET code=$1, name=$2, descripcion=$3, tipo=$4, ubicacion=$5,

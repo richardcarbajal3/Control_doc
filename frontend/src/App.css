@@ -301,6 +301,13 @@ tr:hover {
   margin-top: 1.5rem;
 }
 
+.field-hint {
+  display: block;
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-top: 0.3rem;
+}
+
 .form-error {
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -309,6 +316,30 @@ tr:hover {
   font-size: 0.85rem;
   margin-bottom: 1rem;
   padding: 0.6rem 0.75rem;
+}
+
+/* Alert banner */
+.alert-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 0.875rem;
+  padding: 0.65rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 0.25rem;
+  line-height: 1;
 }
 
 /* Responsive */
