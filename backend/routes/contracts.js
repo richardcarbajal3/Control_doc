@@ -2,26 +2,60 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
+const VALID_TYPES = ['Obra', 'Suministro', 'Servicios', 'Consultoría'];
+const VALID_CURRENCIES = ['PEN', 'USD', 'EUR'];
+const VALID_STATUSES = ['Draft', 'Active', 'In Settlement', 'Closed', 'Terminated'];
+
+function validate(body) {
+  const { code, title, type, currency, status, contratista_id, mandante_id, start_date, end_date, amount } = body;
+  if (!code || !String(code).trim()) return 'El código es requerido';
+  if (!title || !String(title).trim()) return 'El título es requerido';
+  if (type && !VALID_TYPES.includes(type)) return `Tipo inválido. Valores permitidos: ${VALID_TYPES.join(', ')}`;
+  if (currency && !VALID_CURRENCIES.includes(currency)) return `Moneda inválida. Valores permitidos: ${VALID_CURRENCIES.join(', ')}`;
+  if (status && !VALID_STATUSES.includes(status)) return `Estado inválido. Valores permitidos: ${VALID_STATUSES.join(', ')}`;
+  if (contratista_id && mandante_id && String(contratista_id) === String(mandante_id))
+    return 'El contratista y el mandante no pueden ser la misma empresa';
+  if (start_date && end_date && start_date > end_date)
+    return 'La fecha de inicio no puede ser posterior a la fecha de fin';
+  if (amount != null && amount !== '' && Number(amount) < 0)
+    return 'El monto no puede ser negativo';
+  return null;
+}
+
 router.get('/', async (req, res) => {
   try {
-    const { search } = req.query;
-    let query = `
-      SELECT ct.*,
-        p.name AS project_name,
-        c1.razon_social AS contratista_name,
-        c2.razon_social AS mandante_name
-      FROM contracts ct
-      LEFT JOIN projects p ON p.id = ct.project_id
-      LEFT JOIN companies c1 ON c1.id = ct.contratista_id
-      LEFT JOIN companies c2 ON c2.id = ct.mandante_id
-    `;
+    const { search, project_id, status } = req.query;
+    const conditions = [];
     const params = [];
+
     if (search) {
-      query += ' WHERE ct.code ILIKE $1 OR ct.titulo ILIKE $1';
       params.push(`%${search}%`);
+      conditions.push(`(ct.code ILIKE $${params.length} OR ct.title ILIKE $${params.length})`);
     }
-    query += ' ORDER BY ct.created_at DESC';
-    const result = await pool.query(query, params);
+    if (project_id) {
+      params.push(project_id);
+      conditions.push(`ct.project_id = $${params.length}`);
+    }
+    if (status) {
+      params.push(status);
+      conditions.push(`ct.status = $${params.length}`);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const result = await pool.query(
+      `SELECT ct.*,
+         p.name  AS project_name,
+         c1.razon_social AS contratista_name,
+         c2.razon_social AS mandante_name
+       FROM contracts ct
+       LEFT JOIN projects p  ON p.id  = ct.project_id
+       LEFT JOIN companies c1 ON c1.id = ct.contratista_id
+       LEFT JOIN companies c2 ON c2.id = ct.mandante_id
+       ${where}
+       ORDER BY ct.created_at DESC`,
+      params
+    );
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -32,11 +66,11 @@ router.get('/:id', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT ct.*,
-        p.name AS project_name,
-        c1.razon_social AS contratista_name,
-        c2.razon_social AS mandante_name
+         p.name  AS project_name,
+         c1.razon_social AS contratista_name,
+         c2.razon_social AS mandante_name
        FROM contracts ct
-       LEFT JOIN projects p ON p.id = ct.project_id
+       LEFT JOIN projects p  ON p.id  = ct.project_id
        LEFT JOIN companies c1 ON c1.id = ct.contratista_id
        LEFT JOIN companies c2 ON c2.id = ct.mandante_id
        WHERE ct.id = $1`,
@@ -50,29 +84,24 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const {
-    code, titulo, tipo, project_id, contratista_id, mandante_id,
-    monto_original, moneda, fecha_firma, fecha_inicio, fecha_fin,
-    fecha_fin_real, estado, descripcion
-  } = req.body;
-  if (!code || !titulo) return res.status(400).json({ error: 'Código y título son requeridos' });
-  if (contratista_id && mandante_id && String(contratista_id) === String(mandante_id))
-    return res.status(400).json({ error: 'El contratista y el mandante no pueden ser la misma empresa' });
-  if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin)
-    return res.status(400).json({ error: 'La fecha de inicio no puede ser posterior a la fecha de fin' });
-  if (monto_original != null && monto_original !== '' && Number(monto_original) < 0)
-    return res.status(400).json({ error: 'El monto original no puede ser negativo' });
+  const { code, title, type, project_id, contratista_id, mandante_id,
+          amount, currency, start_date, end_date, status, description } = req.body;
+
+  const err = validate(req.body);
+  if (err) return res.status(400).json({ error: err });
+
   try {
     const result = await pool.query(
-      `INSERT INTO contracts (code, titulo, tipo, project_id, contratista_id, mandante_id,
-        monto_original, moneda, fecha_firma, fecha_inicio, fecha_fin, fecha_fin_real, estado, descripcion)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      `INSERT INTO contracts
+         (code, title, type, project_id, contratista_id, mandante_id,
+          amount, currency, start_date, end_date, status, description)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
       [
-        code, titulo, tipo || 'Obra',
+        code.trim(), title.trim(), type || 'Obra',
         project_id || null, contratista_id || null, mandante_id || null,
-        monto_original || null, moneda || 'PEN',
-        fecha_firma || null, fecha_inicio || null, fecha_fin || null, fecha_fin_real || null,
-        estado || 'Borrador', descripcion || null
+        amount || null, currency || 'PEN',
+        start_date || null, end_date || null,
+        status || 'Draft', description || null,
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -83,30 +112,26 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const {
-    code, titulo, tipo, project_id, contratista_id, mandante_id,
-    monto_original, moneda, fecha_firma, fecha_inicio, fecha_fin,
-    fecha_fin_real, estado, descripcion
-  } = req.body;
-  if (!code || !titulo) return res.status(400).json({ error: 'Código y título son requeridos' });
-  if (contratista_id && mandante_id && String(contratista_id) === String(mandante_id))
-    return res.status(400).json({ error: 'El contratista y el mandante no pueden ser la misma empresa' });
-  if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin)
-    return res.status(400).json({ error: 'La fecha de inicio no puede ser posterior a la fecha de fin' });
-  if (monto_original != null && monto_original !== '' && Number(monto_original) < 0)
-    return res.status(400).json({ error: 'El monto original no puede ser negativo' });
+  const { code, title, type, project_id, contratista_id, mandante_id,
+          amount, currency, start_date, end_date, status, description } = req.body;
+
+  const err = validate(req.body);
+  if (err) return res.status(400).json({ error: err });
+
   try {
     const result = await pool.query(
-      `UPDATE contracts SET code=$1, titulo=$2, tipo=$3, project_id=$4, contratista_id=$5,
-        mandante_id=$6, monto_original=$7, moneda=$8, fecha_firma=$9, fecha_inicio=$10,
-        fecha_fin=$11, fecha_fin_real=$12, estado=$13, descripcion=$14, updated_at=NOW()
-       WHERE id=$15 RETURNING *`,
+      `UPDATE contracts
+       SET code=$1, title=$2, type=$3, project_id=$4, contratista_id=$5,
+           mandante_id=$6, amount=$7, currency=$8, start_date=$9,
+           end_date=$10, status=$11, description=$12, updated_at=NOW()
+       WHERE id=$13 RETURNING *`,
       [
-        code, titulo, tipo,
+        code.trim(), title.trim(), type,
         project_id || null, contratista_id || null, mandante_id || null,
-        monto_original || null, moneda,
-        fecha_firma || null, fecha_inicio || null, fecha_fin || null, fecha_fin_real || null,
-        estado, descripcion || null, req.params.id
+        amount || null, currency,
+        start_date || null, end_date || null,
+        status, description || null,
+        req.params.id,
       ]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Contrato no encontrado' });
