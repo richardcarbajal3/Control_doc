@@ -8,6 +8,6 @@ buildCmd = "npm run build"
 [deploy]
 startCommand = "node backend/server.js"
 healthcheckPath = "/api/health"
-healthcheckTimeout = 30
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

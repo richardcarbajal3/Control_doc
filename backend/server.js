@@ -5,6 +5,9 @@ const express = require('express');
 const cors = require('cors');
 const { initDB } = require('./db');
 const documentsRouter = require('./routes/documents');
+const companiesRouter = require('./routes/companies');
+const projectsRouter = require('./routes/projects');
+const contractsRouter = require('./routes/contracts');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -14,6 +17,9 @@ app.use(express.json());
 
 // API routes
 app.use('/api/documents', documentsRouter);
+app.use('/api/companies', companiesRouter);
+app.use('/api/projects', projectsRouter);
+app.use('/api/contracts', contractsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
