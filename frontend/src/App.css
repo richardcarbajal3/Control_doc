@@ -308,6 +308,18 @@ tr:hover {
   margin-top: 1.5rem;
 }
 
+.form-section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.75rem;
+  margin-top: 0.5rem;
+}
+
 .field-hint {
   display: block;
   font-size: 0.78rem;

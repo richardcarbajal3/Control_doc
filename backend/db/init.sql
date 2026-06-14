@@ -51,11 +51,37 @@ CREATE TABLE IF NOT EXISTS documents (
   id SERIAL PRIMARY KEY,
   code VARCHAR(50) UNIQUE NOT NULL,
   title VARCHAR(255) NOT NULL,
+  tipo VARCHAR(50) NOT NULL DEFAULT 'Documento',
   version VARCHAR(20) NOT NULL DEFAULT '1.0',
   status VARCHAR(30) NOT NULL DEFAULT 'Borrador',
+  project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+  contract_id INTEGER REFERENCES contracts(id) ON DELETE SET NULL,
+  correspondence_id INTEGER REFERENCES correspondence(id) ON DELETE SET NULL,
+  descripcion TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Extensión de documentos existentes: agregar columnas si la tabla ya fue creada sin ellas
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='documents' AND column_name='tipo') THEN
+    ALTER TABLE documents ADD COLUMN tipo VARCHAR(50) NOT NULL DEFAULT 'Documento';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='documents' AND column_name='project_id') THEN
+    ALTER TABLE documents ADD COLUMN project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='documents' AND column_name='contract_id') THEN
+    ALTER TABLE documents ADD COLUMN contract_id INTEGER REFERENCES contracts(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='documents' AND column_name='correspondence_id') THEN
+    ALTER TABLE documents ADD COLUMN correspondence_id INTEGER REFERENCES correspondence(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='documents' AND column_name='descripcion') THEN
+    ALTER TABLE documents ADD COLUMN descripcion TEXT;
+  END IF;
+END
+$$;
 
 CREATE TABLE IF NOT EXISTS correspondence (
   id SERIAL PRIMARY KEY,

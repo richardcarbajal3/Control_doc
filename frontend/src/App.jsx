@@ -195,7 +195,14 @@ export default function App() {
       </main>
 
       {showForm && tab === 'documents' && (
-        <DocumentForm document={editing} onSave={handleSaveDoc} onCancel={closeForm} />
+        <DocumentForm
+          document={editing}
+          projects={projects.items}
+          contracts={contracts.items}
+          correspondence={correspondence.items}
+          onSave={handleSaveDoc}
+          onCancel={closeForm}
+        />
       )}
       {showForm && tab === 'companies' && (
         <CompanyForm company={editing} onSave={handleSaveCompany} onCancel={closeForm} />
