@@ -3,9 +3,9 @@ import { IMPORT_CONFIGS } from '../lib/importConfig';
 
 const FIELDS = IMPORT_CONFIGS.documents.fields;
 
-const emptyForm = () => Object.fromEntries(FIELDS.map((f) => [f.key, '']));
+const emptyForm = () => ({ ...Object.fromEntries(FIELDS.map((f) => [f.key, ''])), claim_id: '', parent_id: '' });
 
-export default function DocumentForm({ document, onSave, onCancel }) {
+export default function DocumentForm({ document, claims = [], documents = [], onSave, onCancel }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
 
@@ -17,6 +17,8 @@ export default function DocumentForm({ document, onSave, onCancel }) {
         if (f.type === 'date' && v) v = String(v).slice(0, 10); // ISO -> yyyy-mm-dd
         next[f.key] = v == null ? '' : v;
       });
+      next.claim_id = document.claim_id == null ? '' : String(document.claim_id);
+      next.parent_id = document.parent_id == null ? '' : String(document.parent_id);
       setForm(next);
     }
   }, [document]);
@@ -60,6 +62,31 @@ export default function DocumentForm({ document, onSave, onCancel }) {
                 )}
               </div>
             ))}
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="claim_id">Claim / Caso</label>
+              <select id="claim_id" name="claim_id" value={form.claim_id} onChange={handleChange}>
+                <option value="">— Sin claim —</option>
+                {claims.map((c) => (
+                  <option key={c.id} value={c.id}>{c.code ? `${c.code} — ` : ''}{c.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="parent_id">Responde a (documento)</label>
+              <select id="parent_id" name="parent_id" value={form.parent_id} onChange={handleChange}>
+                <option value="">— Ninguno —</option>
+                {documents
+                  .filter((d) => !document || d.id !== document.id)
+                  .map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {(d.documento_nro || `#${d.id}`)}{d.descripcion ? ` — ${d.descripcion.slice(0, 40)}` : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
 
           <div className="form-actions">

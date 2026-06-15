@@ -52,6 +52,21 @@ CREATE TABLE IF NOT EXISTS contracts (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Claims (Reclamaciones) — see docs/ROADMAP.md Fase 2.1 and docs/ARCHITECTURE.md.
+-- A claim groups the correspondence/documents that support it.
+CREATE TABLE IF NOT EXISTS claims (
+  id SERIAL PRIMARY KEY,
+  code VARCHAR(50),
+  title VARCHAR(255) NOT NULL,
+  type VARCHAR(50) NOT NULL DEFAULT 'Otro',
+  n_contrato VARCHAR(120),
+  status VARCHAR(30) NOT NULL DEFAULT 'Abierto',
+  description TEXT,
+  extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS documents (
   id SERIAL PRIMARY KEY,
   code VARCHAR(50),
@@ -72,6 +87,8 @@ CREATE TABLE IF NOT EXISTS documents (
   tipo_doc VARCHAR(60),
   status_contratista VARCHAR(60),
   responsable VARCHAR(120),
+  claim_id INTEGER REFERENCES claims(id) ON DELETE SET NULL,
+  parent_id INTEGER REFERENCES documents(id) ON DELETE SET NULL,
   extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -106,3 +123,10 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS descripcion TEXT;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS tipo_doc VARCHAR(60);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS status_contratista VARCHAR(60);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS responsable VARCHAR(120);
+
+-- Claims and the links from documents: claim_id groups documents into a claim
+-- (claim_documents); parent_id links a letter to the document it answers (thread).
+ALTER TABLE claims    ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE claims    ADD COLUMN IF NOT EXISTS type VARCHAR(50) NOT NULL DEFAULT 'Otro';
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS claim_id INTEGER REFERENCES claims(id) ON DELETE SET NULL;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES documents(id) ON DELETE SET NULL;

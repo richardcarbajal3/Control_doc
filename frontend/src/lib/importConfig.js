@@ -48,6 +48,17 @@ export const IMPORT_CONFIGS = {
       { key: 'estado', label: 'Estado' },
     ],
   },
+  claims: {
+    label: 'Claims',
+    fields: [
+      { key: 'code', label: 'Código' },
+      { key: 'title', label: 'Título', required: true },
+      { key: 'type', label: 'Tipo' },
+      { key: 'n_contrato', label: 'N° Contrato' },
+      { key: 'status', label: 'Estado' },
+      { key: 'description', label: 'Descripción', type: 'textarea' },
+    ],
+  },
   contracts: {
     label: 'Contratos',
     fields: [

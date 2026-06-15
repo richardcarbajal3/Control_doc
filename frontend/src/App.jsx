@@ -8,20 +8,27 @@ import ProjectList from './components/ProjectList';
 import ProjectForm from './components/ProjectForm';
 import ContractList from './components/ContractList';
 import ContractForm from './components/ContractForm';
+import ClaimList from './components/ClaimList';
+import ClaimForm from './components/ClaimForm';
+import ClaimDetail from './components/ClaimDetail';
 import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
+import PresentationReport from './components/PresentationReport';
 import { IMPORT_CONFIGS } from './lib/importConfig';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
 import { getProjects, createProject, updateProject, deleteProject } from './api/projects';
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
+import { getClaims, createClaim, updateClaim, deleteClaim } from './api/claims';
 
 const TABS = [
   { key: 'documents', label: 'Documentos' },
+  { key: 'claims', label: 'Claims' },
   { key: 'companies', label: 'Empresas' },
   { key: 'projects', label: 'Proyectos' },
   { key: 'contracts', label: 'Contratos' },
+  { key: 'presentation', label: 'Presentación' },
   { key: 'report', label: 'Reporte' },
 ];
 
@@ -49,9 +56,11 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [claimDetail, setClaimDetail] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
   const docs = useModule(getDocuments);
+  const claims = useModule(getClaims);
   const companies = useModule(getCompanies);
   const projects = useModule(getProjects);
   const contracts = useModule(getContracts);
@@ -109,14 +118,27 @@ export default function App() {
     }
   };
 
+  const handleSaveClaim = async (data) => {
+    if (editing) await updateClaim(editing.id, data);
+    else await createClaim(data);
+    closeForm(); claims.refresh();
+  };
+  const handleDeleteClaim = async (c) => {
+    if (window.confirm(`¿Eliminar el claim "${c.title}"?`)) {
+      try { await deleteClaim(c.id); claims.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
+  };
+
   const tabConfig = {
-    documents: { label: 'Documento', searchPlaceholder: 'Buscar por código o título...' },
+    documents: { label: 'Documento', searchPlaceholder: 'Buscar documento (nro, descripción, contrato)...' },
+    claims: { label: 'Claim', searchPlaceholder: 'Buscar claim (código, título, contrato)...' },
     companies: { label: 'Empresa', searchPlaceholder: 'Buscar por RUC o razón social...' },
     projects: { label: 'Proyecto', searchPlaceholder: 'Buscar por código o nombre...' },
     contracts: { label: 'Contrato', searchPlaceholder: 'Buscar por código o título...' },
   };
 
-  const activeModule = { documents: docs, companies, projects, contracts }[tab];
+  const activeModule = { documents: docs, claims, companies, projects, contracts }[tab];
   const cfg = tabConfig[tab];
   const importConfig = IMPORT_CONFIGS[tab];
 
@@ -134,7 +156,7 @@ export default function App() {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); }}
           >
             {t.label}
           </button>
@@ -142,7 +164,9 @@ export default function App() {
       </nav>
 
       <main className="main">
-        {tab === 'report' ? (
+        {tab === 'presentation' ? (
+          <PresentationReport />
+        ) : tab === 'report' ? (
           <ReportView />
         ) : (
           <>
@@ -176,6 +200,14 @@ export default function App() {
                 {tab === 'documents' && (
                   <DocumentList documents={docs.items} onEdit={openEdit} onDelete={handleDeleteDoc} />
                 )}
+                {tab === 'claims' && (
+                  <ClaimList
+                    claims={claims.items}
+                    onEdit={openEdit}
+                    onDelete={handleDeleteClaim}
+                    onOpen={(c) => setClaimDetail(c)}
+                  />
+                )}
                 {tab === 'companies' && (
                   <CompanyList companies={companies.items} onEdit={openEdit} onDelete={handleDeleteCompany} />
                 )}
@@ -192,7 +224,16 @@ export default function App() {
       </main>
 
       {showForm && tab === 'documents' && (
-        <DocumentForm document={editing} onSave={handleSaveDoc} onCancel={closeForm} />
+        <DocumentForm
+          document={editing}
+          claims={claims.items}
+          documents={docs.items}
+          onSave={handleSaveDoc}
+          onCancel={closeForm}
+        />
+      )}
+      {showForm && tab === 'claims' && (
+        <ClaimForm claim={editing} onSave={handleSaveClaim} onCancel={closeForm} />
       )}
       {showForm && tab === 'companies' && (
         <CompanyForm company={editing} onSave={handleSaveCompany} onCancel={closeForm} />
@@ -221,6 +262,15 @@ export default function App() {
           config={importConfig}
           onClose={() => setShowImport(false)}
           onDone={handleImported}
+        />
+      )}
+
+      {claimDetail && (
+        <ClaimDetail
+          claim={claimDetail}
+          allDocuments={docs.items}
+          onClose={() => setClaimDetail(null)}
+          onChanged={() => { claims.refresh(); docs.refresh(); }}
         />
       )}
     </div>

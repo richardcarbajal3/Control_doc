@@ -8,6 +8,8 @@ const documentsRouter = require('./routes/documents');
 const companiesRouter = require('./routes/companies');
 const projectsRouter = require('./routes/projects');
 const contractsRouter = require('./routes/contracts');
+const claimsRouter = require('./routes/claims');
+const reportsRouter = require('./routes/reports');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,6 +22,8 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/companies', companiesRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/contracts', contractsRouter);
+app.use('/api/claims', claimsRouter);
+app.use('/api/reports', reportsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
