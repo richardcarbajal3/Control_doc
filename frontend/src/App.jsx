@@ -97,7 +97,7 @@ export default function App() {
     closeForm(); contracts.refresh();
   };
   const handleDeleteContract = async (c) => {
-    if (window.confirm(`¿Eliminar el contrato "${c.titulo}"?`)) {
+    if (window.confirm(`¿Eliminar el contrato "${c.title}"?`)) {
       try { await deleteContract(c.id); contracts.refresh(); setDeleteError(''); }
       catch (err) { setDeleteError(err.message); }
     }

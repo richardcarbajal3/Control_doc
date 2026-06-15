@@ -75,16 +75,25 @@ Phase 2: ENFORCE & CLEANUP (Future)
   - `backend/db/migrations/002_migrate_to_contracts_v1.down.sql` (rollback)
   - `backend/db/migrations/README.md` (runbook)
 
-### Immediate Task — requires NEON action (manual, approval-gated)
-- Inventory current enum values: `SELECT DISTINCT estado/tipo/moneda FROM contracts;`
-- Back up (Neon branch/snapshot), then run `002_..._v1.up.sql` in Neon SQL Editor.
-- Verify English columns mirror Spanish ones. Rollback available if needed.
-- **Railway**: no change needed for Phase 1; confirm next deploy logs "Schema OK".
+### Phase 1 — DONE ✅
+- Applied `002_..._v1.up.sql` in Neon. 10 English columns created, types verified.
+- Table was empty (0 rows), so no enum value translation was needed.
+- Backup branch `backup-before-002-migration` retained.
 
-### Future — Phase 2 (separate session, separate file)
-- Translate enum values (ES → EN) based on the inventory above.
-- App cutover: update routes + frontend to English columns.
-- Then enforce NOT NULL / FK and drop legacy columns.
+### Phase 2 cutover — DONE in code ✅
+- `backend/routes/contracts.js` now reads/writes English columns.
+- `backend/db/init.sql` contracts table redefined in English V1 (fresh DBs).
+- Frontend (`ContractForm`, `ContractList`, `App`) uses English fields + V1
+  enum values (English stored, Spanish labels). Removed `fecha_firma` (not in V1).
+- App runs on production using Phase-1 columns. NO further DB action required to run.
+
+### Optional cleanup — Phase 2 enforce (requires NEON, not required for app)
+- `003_cleanup_legacy_contracts.up.sql`: NOT NULL/FK + drop legacy Spanish columns.
+- After running, schemaGuard logs full "Schema OK".
+
+### Railway
+- App auto-deploys from the deploy branch. The contracts cutover ships with this
+  commit; redeploy to publish. No DB env change needed.
 
 ---
 

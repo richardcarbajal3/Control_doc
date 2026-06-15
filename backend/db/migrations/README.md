@@ -11,9 +11,14 @@ manually against Neon so each step can be reviewed and approved, per
 
 | Phase | File | Effect | Status |
 |-------|------|--------|--------|
-| 1 | `002_migrate_to_contracts_v1.up.sql` | ADD English columns + COPY data. No constraints, no drops. | Ready (needs Neon execution) |
-| 1 rollback | `002_migrate_to_contracts_v1.down.sql` | DROP only the new columns. Legacy data intact. | Ready |
-| 2 | _(future, separate file)_ | Translate enum values, app cutover to English columns, then NOT NULL / FK / drop legacy columns. | Not started |
+| 1 | `002_migrate_to_contracts_v1.up.sql` | ADD English columns + COPY data. No constraints, no drops. | APPLIED in Neon ✅ |
+| 1 rollback | `002_migrate_to_contracts_v1.down.sql` | DROP only the new columns. Legacy data intact. | Held (do not run) |
+| 2 cleanup | `003_cleanup_legacy_contracts.up.sql` | Enforce NOT NULL/FK + DROP legacy Spanish columns. | OPTIONAL — needs Neon execution |
+| 2 rollback | `003_cleanup_legacy_contracts.down.sql` | Re-add legacy columns (structure only). | Ready |
+
+App cutover to English columns (backend route + frontend) is DONE in code.
+The app works on production right now using the English columns added in
+Phase 1 — running `003` is OPTIONAL cleanup, not required for the app to run.
 
 After Phase 1, the table has BOTH Spanish and English columns. The running app
 keeps using the Spanish ones, so there is **zero downtime / zero breakage**.
