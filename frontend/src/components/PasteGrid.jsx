@@ -57,11 +57,16 @@ export default function PasteGrid({ resource, config, onClose, onDone }) {
   const buildPayload = () =>
     rows.map((r) => {
       const obj = {};
+      const extra = {};
+      // Fixed columns: fields flagged `extra` are kept in extra_data under their
+      // exact header; the rest map to real DB columns via `key`.
       fields.forEach((f, i) => {
         const v = (r[i] ?? '').trim();
-        if (v !== '') obj[f.key] = v;
+        if (v === '') return;
+        if (f.extra) extra[f.label] = v;
+        else obj[f.key] = v;
       });
-      const extra = {};
+      // Anything pasted beyond the fixed set is preserved too.
       extraHeaders.forEach((h, i) => {
         const v = (r[fixedCount + i] ?? '').trim();
         if (v !== '') extra[h] = v;

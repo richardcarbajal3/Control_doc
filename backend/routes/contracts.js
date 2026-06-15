@@ -3,6 +3,16 @@ const router = express.Router();
 const { pool } = require('../db');
 const { createBulkHandler } = require('../lib/bulkInsert');
 
+// Normaliza la moneda del Excel del usuario al enum del modelo (PEN/USD/EUR).
+// Cualquier valor no reconocido se conserva tal cual.
+function normalizeCurrency(v) {
+  const s = String(v).trim().toUpperCase();
+  if (/US\$|USD|D[OÓ]LAR|^\$/.test(s)) return 'USD';
+  if (/S\/|PEN|SOL/.test(s)) return 'PEN';
+  if (/EUR|€/.test(s)) return 'EUR';
+  return v;
+}
+
 // Carga masiva por pegado desde Excel
 router.post('/bulk', createBulkHandler({
   table: 'contracts',
@@ -11,6 +21,7 @@ router.post('/bulk', createBulkHandler({
   required: ['code', 'title'],
   numericColumns: ['amount', 'project_id', 'contractor_id', 'mandante_id'],
   dateColumns: ['start_date', 'end_date', 'actual_end_date'],
+  transforms: { currency: normalizeCurrency },
 }));
 
 router.get('/', async (req, res) => {

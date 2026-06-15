@@ -52,6 +52,7 @@ function createBulkHandler({
   required = [],
   dateColumns = [],
   numericColumns = [],
+  transforms = {},
   maxRows = 5000,
 }) {
   return async (req, res) => {
@@ -95,6 +96,7 @@ function createBulkHandler({
           let v = known[c];
           if (typeof v === 'string') v = v.trim();
           if (v === '') v = null;
+          if (v != null && transforms[c]) v = transforms[c](v);
           if (v != null && numericColumns.includes(c)) v = parseNumberValue(v);
           if (v != null && dateColumns.includes(c)) v = parseDateValue(v);
           cols.push(c);
