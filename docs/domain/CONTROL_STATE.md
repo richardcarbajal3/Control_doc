@@ -67,11 +67,24 @@ Phase 2: ENFORCE & CLEANUP (Future)
 
 ## 4. NEXT ACTION
 
-### Immediate Task
-- **Fix and regenerate**: `002_migrate_to_contracts_v1.sql`
-- **Scope**: Phase 1 only
-- **Validation**: Must align with CONTRACT_MODEL_V1
-- **Approval**: Required before execution
+### Done in code (this session)
+- **Schema guard**: `backend/db/schemaGuard.js` — read-only, runtime drift detection
+  against CONTRACT_MODEL_V1. Integrated non-blockingly into `initDB()`.
+- **Phase 1 migration authored** (NOT yet executed):
+  - `backend/db/migrations/002_migrate_to_contracts_v1.up.sql` (ADD + COPY, additive/idempotent)
+  - `backend/db/migrations/002_migrate_to_contracts_v1.down.sql` (rollback)
+  - `backend/db/migrations/README.md` (runbook)
+
+### Immediate Task — requires NEON action (manual, approval-gated)
+- Inventory current enum values: `SELECT DISTINCT estado/tipo/moneda FROM contracts;`
+- Back up (Neon branch/snapshot), then run `002_..._v1.up.sql` in Neon SQL Editor.
+- Verify English columns mirror Spanish ones. Rollback available if needed.
+- **Railway**: no change needed for Phase 1; confirm next deploy logs "Schema OK".
+
+### Future — Phase 2 (separate session, separate file)
+- Translate enum values (ES → EN) based on the inventory above.
+- App cutover: update routes + frontend to English columns.
+- Then enforce NOT NULL / FK and drop legacy columns.
 
 ---
 
@@ -96,6 +109,6 @@ Phase 2: ENFORCE & CLEANUP (Future)
 ---
 
 ## Tracking & Audit
-- **Last Updated**: 2026-06-14
-- **Current Status**: Phase 1 migration generation in progress
-- **Approvals Required**: Before `002_migrate_to_contracts_v1.sql` execution
+- **Last Updated**: 2026-06-15
+- **Current Status**: Schema guard live; Phase 1 migration authored, awaiting Neon execution
+- **Approvals Required**: Before running `002_migrate_to_contracts_v1.up.sql` in Neon
