@@ -54,10 +54,24 @@ CREATE TABLE IF NOT EXISTS contracts (
 
 CREATE TABLE IF NOT EXISTS documents (
   id SERIAL PRIMARY KEY,
-  code VARCHAR(50) UNIQUE NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  version VARCHAR(20) NOT NULL DEFAULT '1.0',
-  status VARCHAR(30) NOT NULL DEFAULT 'Borrador',
+  code VARCHAR(50),
+  title VARCHAR(255),
+  version VARCHAR(20) DEFAULT '1.0',
+  status VARCHAR(60),
+  status_g VARCHAR(60),
+  n_contrato VARCHAR(120),
+  empresa VARCHAR(255),
+  contrato VARCHAR(255),
+  descripcion_contrato TEXT,
+  fecha DATE,
+  transmittal VARCHAR(255),
+  referencia VARCHAR(255),
+  documento_nro VARCHAR(255),
+  rev VARCHAR(30),
+  descripcion TEXT,
+  tipo_doc VARCHAR(60),
+  status_contratista VARCHAR(60),
+  responsable VARCHAR(120),
   extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -71,3 +85,24 @@ ALTER TABLE companies  ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAUL
 ALTER TABLE projects   ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE contracts  ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE documents  ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Documents register columns (Control Doc transmittal layout). Additive and
+-- idempotent so existing databases gain them on the next deploy. Legacy
+-- code/title/status lose their NOT NULL so paste-loaded rows are not blocked.
+ALTER TABLE documents ALTER COLUMN code   DROP NOT NULL;
+ALTER TABLE documents ALTER COLUMN title  DROP NOT NULL;
+ALTER TABLE documents ALTER COLUMN status DROP NOT NULL;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS status_g VARCHAR(60);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS n_contrato VARCHAR(120);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS empresa VARCHAR(255);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS contrato VARCHAR(255);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS descripcion_contrato TEXT;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS fecha DATE;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS transmittal VARCHAR(255);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS referencia VARCHAR(255);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS documento_nro VARCHAR(255);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS rev VARCHAR(30);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS descripcion TEXT;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS tipo_doc VARCHAR(60);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS status_contratista VARCHAR(60);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS responsable VARCHAR(120);

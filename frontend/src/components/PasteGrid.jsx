@@ -98,6 +98,18 @@ export default function PasteGrid({ resource, config, onClose, onDone }) {
           Mi selección incluye la fila de encabezados
         </label>
 
+        <div className="order-guide">
+          <span className="order-guide-title">Pega tus columnas en este orden:</span>
+          <ol className="order-guide-list">
+            {fields.map((f) => (
+              <li key={f.key}>
+                {f.label}
+                {f.required && <span className="req">*</span>}
+              </li>
+            ))}
+          </ol>
+        </div>
+
         <div className="paste-zone" tabIndex={0} onPaste={handlePaste}>
           {rows.length === 0 ? (
             <span className="paste-placeholder">Haz clic aquí y pega (Ctrl+V)…</span>

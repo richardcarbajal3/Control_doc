@@ -66,7 +66,8 @@ export default function App() {
     closeForm(); docs.refresh();
   };
   const handleDeleteDoc = async (doc) => {
-    if (window.confirm(`¿Eliminar el documento "${doc.title}"?`)) {
+    const label = doc.documento_nro || doc.descripcion || doc.n_contrato || `#${doc.id}`;
+    if (window.confirm(`¿Eliminar el documento "${label}"?`)) {
       try { await deleteDocument(doc.id); docs.refresh(); setDeleteError(''); }
       catch (err) { setDeleteError(err.message); }
     }

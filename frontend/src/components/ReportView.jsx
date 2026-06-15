@@ -3,6 +3,7 @@ import { getDocuments } from '../api/documents';
 import { getCompanies } from '../api/companies';
 import { getProjects } from '../api/projects';
 import { getContracts } from '../api/contracts';
+import { IMPORT_CONFIGS } from '../lib/importConfig';
 
 const SOURCES = [
   { key: 'documents', label: 'Documentos', fetch: getDocuments },
@@ -40,15 +41,22 @@ export default function ReportView() {
     return () => { alive = false; };
   }, [source]);
 
-  // Build columns: base scalar columns (order of first row) + union of extra_data keys.
+  // Build columns: the module's fixed fields (ordered, labeled) when defined,
+  // otherwise auto-derived from the rows; plus a column per extra_data key.
   const { baseCols, extraCols, flatRows } = useMemo(() => {
-    const base = [];
-    const seen = new Set();
-    rows.forEach((r) => {
-      Object.keys(r).forEach((k) => {
-        if (!HIDDEN.has(k) && !seen.has(k)) { seen.add(k); base.push(k); }
+    const cfg = IMPORT_CONFIGS[source];
+    let base;
+    if (cfg) {
+      base = cfg.fields.map((f) => ({ key: f.key, label: f.label }));
+    } else {
+      const seen = new Set();
+      base = [];
+      rows.forEach((r) => {
+        Object.keys(r).forEach((k) => {
+          if (!HIDDEN.has(k) && !seen.has(k)) { seen.add(k); base.push({ key: k, label: k }); }
+        });
       });
-    });
+    }
     const extra = [];
     const extraSeen = new Set();
     rows.forEach((r) => {
@@ -61,15 +69,15 @@ export default function ReportView() {
     });
     const flat = rows.map((r) => {
       const out = {};
-      base.forEach((c) => { out[c] = formatCell(r[c]); });
+      base.forEach((c) => { out[c.key] = formatCell(r[c.key]); });
       extra.forEach((c) => { out[`x:${c}`] = formatCell(r.extra_data?.[c]); });
       return out;
     });
     return { baseCols: base, extraCols: extra, flatRows: flat };
-  }, [rows]);
+  }, [rows, source]);
 
   const allKeys = useMemo(
-    () => [...baseCols, ...extraCols.map((c) => `x:${c}`)],
+    () => [...baseCols.map((c) => c.key), ...extraCols.map((c) => `x:${c}`)],
     [baseCols, extraCols]
   );
 
@@ -80,7 +88,7 @@ export default function ReportView() {
   }, [flatRows, filter, allKeys]);
 
   const downloadCsv = () => {
-    const headers = allKeys.map((k) => (k.startsWith('x:') ? k.slice(2) : k));
+    const headers = [...baseCols.map((c) => c.label), ...extraCols];
     const esc = (v) => {
       const s = String(v ?? '');
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -135,14 +143,14 @@ export default function ReportView() {
           <table>
             <thead>
               <tr>
-                {baseCols.map((c) => <th key={c}>{c}</th>)}
+                {baseCols.map((c) => <th key={c.key}>{c.label}</th>)}
                 {extraCols.map((c) => <th key={`x${c}`} className="extra-col">{c}</th>)}
               </tr>
             </thead>
             <tbody>
               {filtered.map((r, i) => (
                 <tr key={i}>
-                  {baseCols.map((c) => <td key={c}>{r[c]}</td>)}
+                  {baseCols.map((c) => <td key={c.key}>{r[c.key]}</td>)}
                   {extraCols.map((c) => <td key={`x${c}`} className="extra-col">{r[`x:${c}`]}</td>)}
                 </tr>
               ))}
