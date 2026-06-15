@@ -130,3 +130,23 @@ ALTER TABLE claims    ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT
 ALTER TABLE claims    ADD COLUMN IF NOT EXISTS type VARCHAR(50) NOT NULL DEFAULT 'Otro';
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS claim_id INTEGER REFERENCES claims(id) ON DELETE SET NULL;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES documents(id) ON DELETE SET NULL;
+
+-- Many-to-many entre claims y documentos. Un mismo documento (p. ej. una carta
+-- que notifica un procedimiento) puede dar SOPORTE o servir de REFERENCIA a
+-- VARIOS claims, y un claim agrupa varios documentos (cartas, reportes, planos,
+-- enviados y recibidos). Esta tabla es la fuente de verdad de la pertenencia;
+-- el enlace legado documents.claim_id (1 claim por doc) se conserva solo por
+-- compatibilidad y se vuelca aquí en el backfill de abajo.
+CREATE TABLE IF NOT EXISTS claim_documents (
+  claim_id    INTEGER NOT NULL REFERENCES claims(id)    ON DELETE CASCADE,
+  document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  relacion    VARCHAR(20) NOT NULL DEFAULT 'soporte', -- 'soporte' | 'referencia'
+  created_at  TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (claim_id, document_id)
+);
+
+-- Backfill idempotente desde el enlace legado documents.claim_id. Se ejecuta en
+-- cada arranque pero ON CONFLICT lo hace inocuo una vez aplicado.
+INSERT INTO claim_documents (claim_id, document_id)
+SELECT claim_id, id FROM documents WHERE claim_id IS NOT NULL
+ON CONFLICT (claim_id, document_id) DO NOTHING;

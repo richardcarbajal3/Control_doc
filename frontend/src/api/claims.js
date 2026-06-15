@@ -38,3 +38,22 @@ export async function deleteClaim(id) {
   if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Error al eliminar claim'); }
   return res.json();
 }
+
+// Adjunta un documento al claim (relacion: 'soporte' | 'referencia').
+// Un mismo documento puede estar en varios claims.
+export async function attachDocument(claimId, documentId, relacion = 'soporte') {
+  const res = await fetch(`${BASE}/${claimId}/documents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ document_id: documentId, relacion }),
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Error al agregar documento'); }
+  return res.json();
+}
+
+// Quita el vínculo documento↔claim (no elimina el documento).
+export async function detachDocument(claimId, documentId) {
+  const res = await fetch(`${BASE}/${claimId}/documents/${documentId}`, { method: 'DELETE' });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Error al quitar documento'); }
+  return res.json();
+}

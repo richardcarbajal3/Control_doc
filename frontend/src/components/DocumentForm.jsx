@@ -3,9 +3,9 @@ import { IMPORT_CONFIGS } from '../lib/importConfig';
 
 const FIELDS = IMPORT_CONFIGS.documents.fields;
 
-const emptyForm = () => ({ ...Object.fromEntries(FIELDS.map((f) => [f.key, ''])), claim_id: '', parent_id: '' });
+const emptyForm = () => ({ ...Object.fromEntries(FIELDS.map((f) => [f.key, ''])), parent_id: '' });
 
-export default function DocumentForm({ document, claims = [], documents = [], onSave, onCancel }) {
+export default function DocumentForm({ document, documents = [], onSave, onCancel }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
 
@@ -17,7 +17,6 @@ export default function DocumentForm({ document, claims = [], documents = [], on
         if (f.type === 'date' && v) v = String(v).slice(0, 10); // ISO -> yyyy-mm-dd
         next[f.key] = v == null ? '' : v;
       });
-      next.claim_id = document.claim_id == null ? '' : String(document.claim_id);
       next.parent_id = document.parent_id == null ? '' : String(document.parent_id);
       setForm(next);
     }
@@ -66,15 +65,6 @@ export default function DocumentForm({ document, claims = [], documents = [], on
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="claim_id">Claim / Caso</label>
-              <select id="claim_id" name="claim_id" value={form.claim_id} onChange={handleChange}>
-                <option value="">— Sin claim —</option>
-                {claims.map((c) => (
-                  <option key={c.id} value={c.id}>{c.code ? `${c.code} — ` : ''}{c.title}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
               <label htmlFor="parent_id">Responde a (documento)</label>
               <select id="parent_id" name="parent_id" value={form.parent_id} onChange={handleChange}>
                 <option value="">— Ninguno —</option>
@@ -88,6 +78,10 @@ export default function DocumentForm({ document, claims = [], documents = [], on
               </select>
             </div>
           </div>
+          <p className="import-help">
+            Los claims se gestionan desde cada Claim (pestaña Claims → abrir → “Agregar documento”).
+            Un mismo documento puede estar en varios claims, como soporte o referencia.
+          </p>
 
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={onCancel}>

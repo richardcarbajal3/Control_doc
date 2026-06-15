@@ -226,7 +226,6 @@ export default function App() {
       {showForm && tab === 'documents' && (
         <DocumentForm
           document={editing}
-          claims={claims.items}
           documents={docs.items}
           onSave={handleSaveDoc}
           onCancel={closeForm}

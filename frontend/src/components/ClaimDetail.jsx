@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getClaim } from '../api/claims';
-import { updateDocument } from '../api/documents';
+import { getClaim, attachDocument, detachDocument } from '../api/claims';
 
 function fmtDate(v) {
   if (!v) return '';
@@ -11,6 +10,7 @@ function fmtDate(v) {
 export default function ClaimDetail({ claim, allDocuments, onClose, onChanged }) {
   const [data, setData] = useState(null);
   const [pick, setPick] = useState('');
+  const [relacion, setRelacion] = useState('soporte');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,14 +27,14 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
   const addDoc = async () => {
     if (!pick) return;
     setBusy(true); setError('');
-    try { await updateDocument(Number(pick), { claim_id: claim.id }); setPick(''); await load(); onChanged?.(); }
+    try { await attachDocument(claim.id, Number(pick), relacion); setPick(''); await load(); onChanged?.(); }
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
 
   const removeDoc = async (id) => {
     setBusy(true); setError('');
-    try { await updateDocument(id, { claim_id: null }); await load(); onChanged?.(); }
+    try { await detachDocument(claim.id, id); await load(); onChanged?.(); }
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
@@ -60,7 +60,7 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
               <thead>
                 <tr>
                   <th>DOCUMENTO NRO</th><th>DESCRIPCIÓN</th><th>FECHA</th>
-                  <th>STATUS G</th><th className="center">Atraso</th><th></th>
+                  <th>RELACIÓN</th><th>STATUS G</th><th className="center">Atraso</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -69,6 +69,11 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
                     <td className="code-cell">{d.documento_nro}</td>
                     <td>{d.descripcion}</td>
                     <td>{fmtDate(d.fecha)}</td>
+                    <td>
+                      {d.relacion === 'referencia'
+                        ? <span className="pill">Referencia</span>
+                        : <span className="pill pill-ok">Soporte</span>}
+                    </td>
                     <td>
                       {d.is_pending
                         ? <span className="pill pill-warn">{d.status_g || 'PENDIENTE'}</span>
@@ -88,6 +93,10 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
         )}
 
         <h3 className="section-title">Agregar documento existente</h3>
+        <p className="import-help">
+          Un mismo documento puede usarse en varios claims: como <strong>soporte</strong> del
+          reclamo o como <strong>referencia</strong> (p. ej. una carta que notifica un procedimiento).
+        </p>
         <div className="assign-row">
           <select className="search-input" value={pick} onChange={(e) => setPick(e.target.value)}>
             <option value="">— Selecciona un documento —</option>
@@ -96,6 +105,10 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
                 {(d.documento_nro || `#${d.id}`)} — {(d.descripcion || '').slice(0, 60)}
               </option>
             ))}
+          </select>
+          <select className="search-input" value={relacion} onChange={(e) => setRelacion(e.target.value)}>
+            <option value="soporte">Soporte</option>
+            <option value="referencia">Referencia</option>
           </select>
           <button className="btn btn-primary" disabled={!pick || busy} onClick={addDoc}>Agregar</button>
         </div>
