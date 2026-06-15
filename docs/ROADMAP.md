@@ -77,12 +77,12 @@ SaaS de gestión contractual y documental para empresas del sector minería y co
 
 ### 2.1 — Módulo Claims (Reclamaciones)
 
-- [ ] Diseño de entidades: `claims`, `claim_events`, `claim_documents`
-- [ ] Tipos de claim: Ampliación de Plazo / Adicional de Obra / Disputa / Reserva
-- [ ] Flujo de estados: Borrador → Presentado → En Evaluación → Aceptado / Rechazado
-- [ ] Vinculación a contrato y correspondencia de soporte
+- [x] Diseño de entidades: `claims` (+ enlaces `documents.claim_id` como `claim_documents`, `documents.parent_id` para hilo de respuestas). `claim_events` pendiente.
+- [x] Tipos de claim: Ampliación de Plazo / Adicional de Obra / Disputa / Reserva
+- [~] Flujo de estados: Borrador → Presentado → En Evaluación → Aceptado / Rechazado *(implementado simple: Abierto / En Análisis / Presentado / Cerrado; falta flujo formal de transiciones)*
+- [x] Vinculación a contrato (`n_contrato`) y documentos/correspondencia de soporte
 - [ ] Cálculo de impacto en monto y plazo contractual
-- [ ] Historial de eventos y trazabilidad completa
+- [ ] Historial de eventos y trazabilidad completa (`claim_events`)
 
 ### 2.2 — Almacenamiento de Archivos
 
@@ -93,10 +93,12 @@ SaaS de gestión contractual y documental para empresas del sector minería y co
 
 ### 2.3 — Dashboard y Reportes
 
-- [ ] Dashboard por proyecto: contratos activos, correspondencia pendiente, claims abiertos
+- [~] Dashboard de presentación (pestaña "Presentación"): pendientes, atrasados, atendidos, pendientes por responsable y por STATUS G. *(Falta vista por proyecto y "claims abiertos".)*
 - [ ] Alertas de vencimiento de contratos y correspondencia
-- [ ] Exportación a Excel / PDF por módulo
-- [ ] KPIs: monto comprometido, días restantes, tasa de respuesta de correspondencia
+- [~] Exportación a Excel / PDF por módulo *(CSV de pendientes implementado; falta PDF y resto de módulos.)*
+- [~] KPIs: días de atraso (regla SLA 3 días desde FECHA), máx. y promedio de atraso. *(Falta monto comprometido y días restantes de contrato.)*
+
+> **Regla de pendiente/atraso (implementada):** un documento está *pendiente* cuando `STATUS G` ≠ `ATENDIDO`; su vencimiento es **3 días** después de `FECHA`, y `días de atraso = hoy − (FECHA + 3)` mientras siga pendiente.
 
 ### 2.4 — Notificaciones
 

@@ -195,6 +195,22 @@ Cada tarea es atómica, estimable y asignable a un desarrollador.
 
 ---
 
+## Entregado fuera de orden (Fase 2 anticipada)
+
+### T-29 · Módulo Claims + enlace de documentos · **Hecho**
+- Tabla `claims` (código, título, tipo, n_contrato, estado, descripción).
+- Enlaces en `documents`: `claim_id` (agrupa documentos en un claim, equivale a `claim_documents`) y `parent_id` (hilo carta→carta).
+- API `/api/claims` (CRUD + carga masiva por pegado) y detalle con sus documentos de soporte.
+- Frontend: pestaña Claims (lista/formulario/detalle con asignar–quitar) y selectores "Claim" y "Responde a" en el formulario de documento.
+- `documents` PUT pasó a actualización **parcial** (asignar un claim ya no borra el resto de campos).
+
+### T-30 · Dashboard de presentación (pendientes y atrasos) · **Hecho**
+- API `/api/reports/documents`: totales, pendientes/atrasados/atendidos, por responsable y por STATUS G.
+- Regla: *pendiente* = `STATUS G` ≠ `ATENDIDO`; *días de atraso* = hoy − (`FECHA` + 3 días) mientras siga pendiente (SLA 3 días).
+- Frontend: pestaña Presentación con KPIs, pendientes por responsable, pendientes por días de atraso y exportación CSV.
+
+---
+
 ## Orden de ejecución sugerido
 
 ```
@@ -247,3 +263,5 @@ T-12 → T-13 → T-15 → T-14
 | T-26 | Dashboard por proyecto | Baja | Pendiente |
 | T-27 | Exportación Excel | Baja | Pendiente |
 | T-28 | Alertas por email | Baja | Pendiente |
+| T-29 | Módulo Claims + enlace de documentos | Alta | Hecho |
+| T-30 | Dashboard de presentación (pendientes/atrasos) | Alta | Hecho |
