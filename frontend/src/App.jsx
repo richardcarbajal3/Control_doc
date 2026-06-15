@@ -8,6 +8,9 @@ import ProjectList from './components/ProjectList';
 import ProjectForm from './components/ProjectForm';
 import ContractList from './components/ContractList';
 import ContractForm from './components/ContractForm';
+import PasteGrid from './components/PasteGrid';
+import ReportView from './components/ReportView';
+import { IMPORT_CONFIGS } from './lib/importConfig';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
@@ -19,6 +22,7 @@ const TABS = [
   { key: 'companies', label: 'Empresas' },
   { key: 'projects', label: 'Proyectos' },
   { key: 'contracts', label: 'Contratos' },
+  { key: 'report', label: 'Reporte' },
 ];
 
 function useModule(fetchFn, deps = []) {
@@ -43,6 +47,7 @@ function useModule(fetchFn, deps = []) {
 export default function App() {
   const [tab, setTab] = useState('documents');
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
@@ -112,6 +117,9 @@ export default function App() {
 
   const activeModule = { documents: docs, companies, projects, contracts }[tab];
   const cfg = tabConfig[tab];
+  const importConfig = IMPORT_CONFIGS[tab];
+
+  const handleImported = () => { activeModule?.refresh(); };
 
   return (
     <div className="app">
@@ -125,7 +133,7 @@ export default function App() {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setEditing(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); }}
           >
             {t.label}
           </button>
@@ -133,41 +141,50 @@ export default function App() {
       </nav>
 
       <main className="main">
-        <div className="toolbar">
-          <input
-            type="text"
-            className="search-input"
-            placeholder={cfg.searchPlaceholder}
-            value={activeModule.search}
-            onChange={(e) => activeModule.setSearch(e.target.value)}
-          />
-          <button className="btn btn-primary" onClick={openCreate}>
-            + Nuevo {cfg.label}
-          </button>
-        </div>
-
-        {deleteError && (
-          <div className="alert-error">
-            {deleteError}
-            <button className="alert-close" onClick={() => setDeleteError('')}>✕</button>
-          </div>
-        )}
-
-        {activeModule.loading ? (
-          <div className="loading">Cargando...</div>
+        {tab === 'report' ? (
+          <ReportView />
         ) : (
           <>
-            {tab === 'documents' && (
-              <DocumentList documents={docs.items} onEdit={openEdit} onDelete={handleDeleteDoc} />
+            <div className="toolbar">
+              <input
+                type="text"
+                className="search-input"
+                placeholder={cfg.searchPlaceholder}
+                value={activeModule.search}
+                onChange={(e) => activeModule.setSearch(e.target.value)}
+              />
+              <button className="btn btn-secondary" onClick={() => setShowImport(true)}>
+                📋 Pegar desde Excel
+              </button>
+              <button className="btn btn-primary" onClick={openCreate}>
+                + Nuevo {cfg.label}
+              </button>
+            </div>
+
+            {deleteError && (
+              <div className="alert-error">
+                {deleteError}
+                <button className="alert-close" onClick={() => setDeleteError('')}>✕</button>
+              </div>
             )}
-            {tab === 'companies' && (
-              <CompanyList companies={companies.items} onEdit={openEdit} onDelete={handleDeleteCompany} />
-            )}
-            {tab === 'projects' && (
-              <ProjectList projects={projects.items} onEdit={openEdit} onDelete={handleDeleteProject} />
-            )}
-            {tab === 'contracts' && (
-              <ContractList contracts={contracts.items} onEdit={openEdit} onDelete={handleDeleteContract} />
+
+            {activeModule.loading ? (
+              <div className="loading">Cargando...</div>
+            ) : (
+              <>
+                {tab === 'documents' && (
+                  <DocumentList documents={docs.items} onEdit={openEdit} onDelete={handleDeleteDoc} />
+                )}
+                {tab === 'companies' && (
+                  <CompanyList companies={companies.items} onEdit={openEdit} onDelete={handleDeleteCompany} />
+                )}
+                {tab === 'projects' && (
+                  <ProjectList projects={projects.items} onEdit={openEdit} onDelete={handleDeleteProject} />
+                )}
+                {tab === 'contracts' && (
+                  <ContractList contracts={contracts.items} onEdit={openEdit} onDelete={handleDeleteContract} />
+                )}
+              </>
             )}
           </>
         )}
@@ -194,6 +211,15 @@ export default function App() {
           companies={companies.items}
           onSave={handleSaveContract}
           onCancel={closeForm}
+        />
+      )}
+
+      {showImport && importConfig && (
+        <PasteGrid
+          resource={tab}
+          config={importConfig}
+          onClose={() => setShowImport(false)}
+          onDone={handleImported}
         />
       )}
     </div>

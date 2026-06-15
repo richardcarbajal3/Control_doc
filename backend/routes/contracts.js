@@ -1,6 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { createBulkHandler } = require('../lib/bulkInsert');
+
+// Carga masiva por pegado desde Excel
+router.post('/bulk', createBulkHandler({
+  table: 'contracts',
+  columns: ['code', 'title', 'type', 'project_id', 'contractor_id', 'mandante_id',
+    'amount', 'currency', 'start_date', 'end_date', 'actual_end_date', 'status', 'description'],
+  required: ['code', 'title'],
+  numericColumns: ['amount', 'project_id', 'contractor_id', 'mandante_id'],
+  dateColumns: ['start_date', 'end_date', 'actual_end_date'],
+}));
 
 router.get('/', async (req, res) => {
   try {

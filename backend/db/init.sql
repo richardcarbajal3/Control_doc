@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS companies (
   email_contacto VARCHAR(255),
   telefono VARCHAR(50),
   estado VARCHAR(30) NOT NULL DEFAULT 'Activa',
+  extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS projects (
   fecha_fin DATE,
   estado VARCHAR(30) NOT NULL DEFAULT 'Planificación',
   company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+  extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -45,6 +47,7 @@ CREATE TABLE IF NOT EXISTS contracts (
   actual_end_date DATE,
   status VARCHAR(30) NOT NULL DEFAULT 'Draft',
   description TEXT,
+  extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -55,6 +58,16 @@ CREATE TABLE IF NOT EXISTS documents (
   title VARCHAR(255) NOT NULL,
   version VARCHAR(20) NOT NULL DEFAULT '1.0',
   status VARCHAR(30) NOT NULL DEFAULT 'Borrador',
+  extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Self-healing additive columns. These run on every boot and are no-ops once
+-- applied, so an already-provisioned database (e.g. production on Neon) gains
+-- the extra_data column on the next deploy WITHOUT a manual migration. Safe:
+-- additive only, never drops or rewrites data.
+ALTER TABLE companies  ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE projects   ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE contracts  ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE documents  ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT '{}'::jsonb;
