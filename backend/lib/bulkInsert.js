@@ -53,6 +53,7 @@ function createBulkHandler({
   dateColumns = [],
   numericColumns = [],
   transforms = {},
+  rowTransform = null,
   maxRows = 5000,
 }) {
   return async (req, res) => {
@@ -79,6 +80,10 @@ function createBulkHandler({
             if (v !== '' && v != null) extra[k] = v;
           }
         }
+
+        // Row-level hook: may derive/adjust `known` columns from `extra` values
+        // (e.g. pick the contract amount from the matching currency column).
+        if (rowTransform) rowTransform(known, extra);
 
         const missing = required.filter((c) => known[c] == null || String(known[c]).trim() === '');
         if (missing.length) {

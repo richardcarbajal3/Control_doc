@@ -13,6 +13,18 @@ function normalizeCurrency(v) {
   return v;
 }
 
+// El monto oficial se toma de la columna SIN IGV que corresponde a la moneda
+// del contrato (US$ → columna US$, S/ → columna S/). Solo se aplica si la fila
+// no trae ya un `amount` explícito.
+function deriveAmount(known, extra) {
+  if (known.amount != null && String(known.amount).trim() !== '') return;
+  const cur = normalizeCurrency(known.currency || '');
+  let src = null;
+  if (cur === 'USD') src = extra['MONTO CONTRATADO US$ (SIN IGV)'];
+  else if (cur === 'PEN') src = extra['MONTO CONTRATADO S/ (SIN IGV)'];
+  if (src != null && String(src).trim() !== '') known.amount = src;
+}
+
 // Carga masiva por pegado desde Excel
 router.post('/bulk', createBulkHandler({
   table: 'contracts',
@@ -22,6 +34,7 @@ router.post('/bulk', createBulkHandler({
   numericColumns: ['amount', 'project_id', 'contractor_id', 'mandante_id'],
   dateColumns: ['start_date', 'end_date', 'actual_end_date'],
   transforms: { currency: normalizeCurrency },
+  rowTransform: deriveAmount,
 }));
 
 router.get('/', async (req, res) => {
