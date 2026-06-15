@@ -20,9 +20,12 @@ App cutover to English columns (backend route + frontend) is DONE in code.
 The app works on production right now using the English columns added in
 Phase 1 — running `003` is OPTIONAL cleanup, not required for the app to run.
 
-After Phase 1, the table has BOTH Spanish and English columns. The running app
-keeps using the Spanish ones, so there is **zero downtime / zero breakage**.
-The `schemaGuard` will report drift cleared for the V1 columns it checks.
+After Phase 1, the table has BOTH Spanish and English columns. The app has now
+cut over to the English (V1) columns, while the legacy Spanish columns remain in
+place as a safety net until the optional Phase 2 cleanup (`003`). Because Phase 1
+populated the English columns from the Spanish ones, this cutover is
+**zero downtime / zero breakage**. The `schemaGuard` reports drift cleared for
+the V1 columns it checks.
 
 ## How to apply Phase 1 (Neon)
 
