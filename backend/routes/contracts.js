@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { createBulkHandler } = require('../lib/bulkInsert');
+const { actorOrgId, orgCond } = require('../lib/scope');
 
 // Carga masiva por pegado desde Excel
 router.post('/bulk', createBulkHandler({
@@ -16,7 +17,15 @@ router.post('/bulk', createBulkHandler({
 router.get('/', async (req, res) => {
   try {
     const { search } = req.query;
-    let query = `
+    const params = [];
+    const conds = [];
+    const oc = orgCond(req, params, 'ct.organization_id');
+    if (oc) conds.push(oc);
+    if (search) {
+      params.push(`%${search}%`);
+      conds.push(`(ct.code ILIKE $${params.length} OR ct.title ILIKE $${params.length})`);
+    }
+    const query = `
       SELECT ct.*,
         p.name AS project_name,
         c1.razon_social AS contractor_name,
@@ -24,14 +33,9 @@ router.get('/', async (req, res) => {
       FROM contracts ct
       LEFT JOIN projects p ON p.id = ct.project_id
       LEFT JOIN companies c1 ON c1.id = ct.contractor_id
-      LEFT JOIN companies c2 ON c2.id = ct.mandante_id
-    `;
-    const params = [];
-    if (search) {
-      query += ' WHERE ct.code ILIKE $1 OR ct.title ILIKE $1';
-      params.push(`%${search}%`);
-    }
-    query += ' ORDER BY ct.created_at DESC';
+      LEFT JOIN companies c2 ON c2.id = ct.mandante_id`
+      + (conds.length ? ' WHERE ' + conds.join(' AND ') : '')
+      + ' ORDER BY ct.created_at DESC';
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
@@ -41,8 +45,8 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT ct.*,
+    const params = [req.params.id];
+    let q = `SELECT ct.*,
         p.name AS project_name,
         c1.razon_social AS contractor_name,
         c2.razon_social AS mandante_name
@@ -50,9 +54,10 @@ router.get('/:id', async (req, res) => {
        LEFT JOIN projects p ON p.id = ct.project_id
        LEFT JOIN companies c1 ON c1.id = ct.contractor_id
        LEFT JOIN companies c2 ON c2.id = ct.mandante_id
-       WHERE ct.id = $1`,
-      [req.params.id]
-    );
+       WHERE ct.id = $1`;
+    const oc = orgCond(req, params, 'ct.organization_id');
+    if (oc) q += ` AND ${oc}`;
+    const result = await pool.query(q, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Contrato no encontrado' });
     res.json(result.rows[0]);
   } catch (err) {
@@ -76,14 +81,14 @@ router.post('/', async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO contracts (code, title, type, project_id, contractor_id, mandante_id,
-        amount, currency, start_date, end_date, actual_end_date, status, description)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+        amount, currency, start_date, end_date, actual_end_date, status, description, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
       [
         code, title, type || 'Work',
         project_id || null, contractor_id || null, mandante_id || null,
         amount || null, currency || 'PEN',
         start_date || null, end_date || null, actual_end_date || null,
-        status || 'Draft', description || null
+        status || 'Draft', description || null, actorOrgId(req)
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -107,19 +112,21 @@ router.put('/:id', async (req, res) => {
   if (amount != null && amount !== '' && Number(amount) < 0)
     return res.status(400).json({ error: 'El monto no puede ser negativo' });
   try {
-    const result = await pool.query(
-      `UPDATE contracts SET code=$1, title=$2, type=$3, project_id=$4, contractor_id=$5,
+    const params = [
+      code, title, type,
+      project_id || null, contractor_id || null, mandante_id || null,
+      amount || null, currency,
+      start_date || null, end_date || null, actual_end_date || null,
+      status, description || null, req.params.id
+    ];
+    let q = `UPDATE contracts SET code=$1, title=$2, type=$3, project_id=$4, contractor_id=$5,
         mandante_id=$6, amount=$7, currency=$8, start_date=$9, end_date=$10,
         actual_end_date=$11, status=$12, description=$13, updated_at=NOW()
-       WHERE id=$14 RETURNING *`,
-      [
-        code, title, type,
-        project_id || null, contractor_id || null, mandante_id || null,
-        amount || null, currency,
-        start_date || null, end_date || null, actual_end_date || null,
-        status, description || null, req.params.id
-      ]
-    );
+       WHERE id=$14`;
+    const oc = orgCond(req, params, 'organization_id');
+    if (oc) q += ` AND ${oc}`;
+    q += ' RETURNING *';
+    const result = await pool.query(q, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Contrato no encontrado' });
     res.json(result.rows[0]);
   } catch (err) {
@@ -130,7 +137,12 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM contracts WHERE id = $1 RETURNING id', [req.params.id]);
+    const params = [req.params.id];
+    let q = 'DELETE FROM contracts WHERE id = $1';
+    const oc = orgCond(req, params);
+    if (oc) q += ` AND ${oc}`;
+    q += ' RETURNING id';
+    const result = await pool.query(q, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Contrato no encontrado' });
     res.json({ message: 'Contrato eliminado' });
   } catch (err) {

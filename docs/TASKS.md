@@ -274,6 +274,8 @@ T-12 → T-13 → T-15 → T-14
 | T-28 | Alertas por email | Baja | Pendiente |
 | T-29 | Módulo Claims + enlace de documentos | Alta | Hecho |
 | T-30 | Dashboard de presentación (pendientes/atrasos) | Alta | Hecho |
+| T-32 | SaaS multi-cliente: organizaciones + registro + asignación | Alta | Hecho |
+| T-33 | Aislamiento de datos por organización (multitenancy) | Alta | Hecho |
 | T-12 | Autenticación JWT (correo corporativo + contraseña) | Alta | Hecho |
 | T-13 | Roles: superadmin/admin/member + roles por contrato | Alta | Parcial |
 | T-15 | Pantalla Login | Alta | Hecho |

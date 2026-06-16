@@ -7,6 +7,21 @@ const { normalizeEmail, CONTRACT_ROLES } = require('../lib/auth');
 // Only admins/superadmins manage who is assigned to a contract and with what role.
 router.use(requireAuth, requireRole('admin', 'superadmin'));
 
+// The contract must belong to the acting admin's organization (owner: any).
+router.use(async (req, res, next) => {
+  try {
+    if (req.user.role === 'superadmin') return next();
+    const { rows } = await pool.query('SELECT organization_id FROM contracts WHERE id = $1', [req.params.contractId]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Contrato no encontrado' });
+    if (rows[0].organization_id !== req.user.organization_id) {
+      return res.status(403).json({ error: 'No autorizado' });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Find a user by email, creating a pending account (no password) if needed so
 // an admin can assign roles before the person has logged in. The user is
 // attached to the acting admin's organization.

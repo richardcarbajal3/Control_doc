@@ -182,3 +182,31 @@ CREATE TABLE IF NOT EXISTS allowed_domains (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL;
+
+-- =========================================================================
+-- Multi-tenant data isolation (Fase 3): every data table is scoped to an
+-- organization. Added via self-healing ALTERs (organizations already exists
+-- above). ON DELETE CASCADE so removing a client removes its data.
+-- =========================================================================
+ALTER TABLE companies  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE projects   ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE contracts  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE claims     ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE documents  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+
+-- Uniqueness becomes per-tenant: two organizations may reuse the same RUC or
+-- contract/project code. NULL organization_id (legacy/owner data) stays distinct.
+ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_ruc_key;
+ALTER TABLE projects  DROP CONSTRAINT IF EXISTS projects_code_key;
+ALTER TABLE contracts DROP CONSTRAINT IF EXISTS contracts_code_key;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'companies_org_ruc_key') THEN
+    ALTER TABLE companies ADD CONSTRAINT companies_org_ruc_key UNIQUE (organization_id, ruc);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'projects_org_code_key') THEN
+    ALTER TABLE projects ADD CONSTRAINT projects_org_code_key UNIQUE (organization_id, code);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'contracts_org_code_key') THEN
+    ALTER TABLE contracts ADD CONSTRAINT contracts_org_code_key UNIQUE (organization_id, code);
+  END IF;
+END $$;

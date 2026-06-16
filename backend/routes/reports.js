@@ -4,21 +4,31 @@ const { pool } = require('../db');
 
 // Pending = STATUS G not "ATENDIDO". Due 3 days after FECHA; overdue when past due.
 const SLA_DAYS = 3;
-const DOC_CTE = `
-  WITH d AS (
-    SELECT
-      doc.*,
-      (UPPER(TRIM(COALESCE(doc.status_g,''))) <> 'ATENDIDO') AS is_pending,
-      CASE WHEN doc.fecha IS NOT NULL
-        THEN GREATEST(0, (CURRENT_DATE - (doc.fecha + INTERVAL '${SLA_DAYS} day')::date))
-      END AS dias_atraso
-    FROM documents doc
-  )
-`;
+
+// The CTE is scoped to the actor's organization (the owner sees everything).
+function buildCte(req) {
+  const scoped = !(req.user && req.user.role === 'superadmin');
+  const where = scoped ? 'WHERE doc.organization_id = $1' : '';
+  const params = scoped ? [req.user.organization_id] : [];
+  const cte = `
+    WITH d AS (
+      SELECT
+        doc.*,
+        (UPPER(TRIM(COALESCE(doc.status_g,''))) <> 'ATENDIDO') AS is_pending,
+        CASE WHEN doc.fecha IS NOT NULL
+          THEN GREATEST(0, (CURRENT_DATE - (doc.fecha + INTERVAL '${SLA_DAYS} day')::date))
+        END AS dias_atraso
+      FROM documents doc
+      ${where}
+    )
+  `;
+  return { cte, params };
+}
 
 // Dashboard de presentación para Documentos / Correspondencia.
 router.get('/documents', async (req, res) => {
   try {
+    const { cte: DOC_CTE, params } = buildCte(req);
     const totals = await pool.query(`${DOC_CTE}
       SELECT
         COUNT(*) AS total,
@@ -27,7 +37,7 @@ router.get('/documents', async (req, res) => {
         COUNT(*) FILTER (WHERE is_pending AND COALESCE(dias_atraso,0) > 0) AS atrasados,
         COALESCE(MAX(dias_atraso) FILTER (WHERE is_pending), 0) AS max_atraso,
         COALESCE(ROUND(AVG(dias_atraso) FILTER (WHERE is_pending AND dias_atraso > 0)), 0) AS prom_atraso
-      FROM d`);
+      FROM d`, params);
 
     const byResponsable = await pool.query(`${DOC_CTE}
       SELECT
@@ -38,11 +48,11 @@ router.get('/documents', async (req, res) => {
       FROM d
       GROUP BY 1
       HAVING COUNT(*) FILTER (WHERE is_pending) > 0
-      ORDER BY atrasados DESC, pendientes DESC`);
+      ORDER BY atrasados DESC, pendientes DESC`, params);
 
     const byStatusG = await pool.query(`${DOC_CTE}
       SELECT COALESCE(NULLIF(TRIM(status_g),''), '(sin estado)') AS status_g, COUNT(*) AS count
-      FROM d GROUP BY 1 ORDER BY count DESC`);
+      FROM d GROUP BY 1 ORDER BY count DESC`, params);
 
     const pendientesList = await pool.query(`${DOC_CTE}
       SELECT id, documento_nro, descripcion, responsable, n_contrato, empresa,
@@ -50,7 +60,7 @@ router.get('/documents', async (req, res) => {
       FROM d
       WHERE is_pending
       ORDER BY COALESCE(dias_atraso,0) DESC, fecha NULLS LAST
-      LIMIT 500`);
+      LIMIT 500`, params);
 
     res.json({
       sla_days: SLA_DAYS,

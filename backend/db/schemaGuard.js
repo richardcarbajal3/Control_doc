@@ -32,6 +32,7 @@ const EXPECTED_CONTRACTS_COLUMNS = [
   'status',
   'description',
   'extra_data',
+  'organization_id',
   'created_at',
   'updated_at',
 ];
