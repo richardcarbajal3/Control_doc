@@ -10,6 +10,10 @@ const projectsRouter = require('./routes/projects');
 const contractsRouter = require('./routes/contracts');
 const claimsRouter = require('./routes/claims');
 const reportsRouter = require('./routes/reports');
+const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
+const contractMembersRouter = require('./routes/contractMembers');
+const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,17 +21,23 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// API routes
-app.use('/api/documents', documentsRouter);
-app.use('/api/companies', companiesRouter);
-app.use('/api/projects', projectsRouter);
-app.use('/api/contracts', contractsRouter);
-app.use('/api/claims', claimsRouter);
-app.use('/api/reports', reportsRouter);
+// Public auth endpoints (login).
+app.use('/api/auth', authRouter);
 
+// Health is public so platform probes work without a token.
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Everything below requires a valid session.
+app.use('/api/users', usersRouter);
+app.use('/api/contracts/:contractId/members', contractMembersRouter);
+app.use('/api/documents', requireAuth, documentsRouter);
+app.use('/api/companies', requireAuth, companiesRouter);
+app.use('/api/projects', requireAuth, projectsRouter);
+app.use('/api/contracts', requireAuth, contractsRouter);
+app.use('/api/claims', requireAuth, claimsRouter);
+app.use('/api/reports', requireAuth, reportsRouter);
 
 // Servir frontend compilado en producción
 const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');

@@ -11,6 +11,10 @@ import ContractForm from './components/ContractForm';
 import ClaimList from './components/ClaimList';
 import ClaimForm from './components/ClaimForm';
 import ClaimDetail from './components/ClaimDetail';
+import ContractMembers from './components/ContractMembers';
+import UserList from './components/UserList';
+import UserForm from './components/UserForm';
+import Login from './components/Login';
 import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
@@ -21,8 +25,11 @@ import { getCompanies, createCompany, updateCompany, deleteCompany } from './api
 import { getProjects, createProject, updateProject, deleteProject } from './api/projects';
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
 import { getClaims, createClaim, updateClaim, deleteClaim } from './api/claims';
+import { getUsers, createUser, updateUser, deleteUser } from './api/users';
+import { getMe, logout } from './api/auth';
+import { getToken } from './api/http';
 
-const TABS = [
+const BASE_TABS = [
   { key: 'documents', label: 'Documentos' },
   { key: 'claims', label: 'Claims' },
   { key: 'companies', label: 'Empresas' },
@@ -51,12 +58,41 @@ function useModule(fetchFn, deps = []) {
   return { items, loading, search, setSearch, refresh: fetch };
 }
 
+// Top-level: handle the session. The data hooks live in <Dashboard> so they
+// only mount (and fire API calls) once the user is authenticated.
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const onUnauth = () => setUser(null);
+    window.addEventListener('cd-unauthorized', onUnauth);
+    (async () => {
+      if (getToken()) {
+        try { setUser(await getMe()); } catch { /* invalid token */ }
+      }
+      setChecking(false);
+    })();
+    return () => window.removeEventListener('cd-unauthorized', onUnauth);
+  }, []);
+
+  if (checking) return <div className="loading">Cargando…</div>;
+  if (!user) return <Login onLoggedIn={setUser} />;
+  return <Dashboard currentUser={user} onLogout={() => { logout(); setUser(null); }} />;
+}
+
+function Dashboard({ currentUser, onLogout }) {
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+  const TABS = isAdmin
+    ? [...BASE_TABS.slice(0, 5), { key: 'users', label: 'Usuarios' }, ...BASE_TABS.slice(5)]
+    : BASE_TABS;
+
   const [tab, setTab] = useState('documents');
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState(null);
   const [claimDetail, setClaimDetail] = useState(null);
+  const [rolesContract, setRolesContract] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
   const docs = useModule(getDocuments);
@@ -64,6 +100,7 @@ export default function App() {
   const companies = useModule(getCompanies);
   const projects = useModule(getProjects);
   const contracts = useModule(getContracts);
+  const users = useModule(getUsers);
 
   const openCreate = () => { setDeleteError(''); setEditing(null); setShowForm(true); };
   const openEdit = (item) => { setDeleteError(''); setEditing(item); setShowForm(true); };
@@ -130,15 +167,28 @@ export default function App() {
     }
   };
 
+  const handleSaveUser = async (data) => {
+    if (editing) await updateUser(editing.id, data);
+    else await createUser(data);
+    closeForm(); users.refresh();
+  };
+  const handleDeleteUser = async (u) => {
+    if (window.confirm(`¿Eliminar al usuario "${u.email}"?`)) {
+      try { await deleteUser(u.id); users.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
+  };
+
   const tabConfig = {
     documents: { label: 'Documento', searchPlaceholder: 'Buscar documento (nro, descripción, contrato)...' },
     claims: { label: 'Claim', searchPlaceholder: 'Buscar claim (código, título, contrato)...' },
     companies: { label: 'Empresa', searchPlaceholder: 'Buscar por RUC o razón social...' },
     projects: { label: 'Proyecto', searchPlaceholder: 'Buscar por código o nombre...' },
     contracts: { label: 'Contrato', searchPlaceholder: 'Buscar por código o título...' },
+    users: { label: 'Usuario', searchPlaceholder: 'Usuarios…' },
   };
 
-  const activeModule = { documents: docs, claims, companies, projects, contracts }[tab];
+  const activeModule = { documents: docs, claims, companies, projects, contracts, users }[tab];
   const cfg = tabConfig[tab];
   const importConfig = IMPORT_CONFIGS[tab];
 
@@ -147,8 +197,15 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>Control Doc</h1>
-        <p>Sistema de gestión contractual y documental</p>
+        <div>
+          <h1>Control Doc</h1>
+          <p>Sistema de gestión contractual y documental</p>
+        </div>
+        <div className="user-box">
+          <span className="user-email">{currentUser.email}</span>
+          <span className="user-role">{currentUser.role}</span>
+          <button className="btn btn-secondary btn-small" onClick={onLogout}>Salir</button>
+        </div>
       </header>
 
       <nav className="tabs">
@@ -156,7 +213,7 @@ export default function App() {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setRolesContract(null); }}
           >
             {t.label}
           </button>
@@ -215,7 +272,20 @@ export default function App() {
                   <ProjectList projects={projects.items} onEdit={openEdit} onDelete={handleDeleteProject} />
                 )}
                 {tab === 'contracts' && (
-                  <ContractList contracts={contracts.items} onEdit={openEdit} onDelete={handleDeleteContract} />
+                  <ContractList
+                    contracts={contracts.items}
+                    onEdit={openEdit}
+                    onDelete={handleDeleteContract}
+                    onManageRoles={isAdmin ? setRolesContract : undefined}
+                  />
+                )}
+                {tab === 'users' && (
+                  <UserList
+                    users={users.items}
+                    currentUser={currentUser}
+                    onEdit={openEdit}
+                    onDelete={handleDeleteUser}
+                  />
                 )}
               </>
             )}
@@ -234,6 +304,14 @@ export default function App() {
       )}
       {showForm && tab === 'claims' && (
         <ClaimForm claim={editing} onSave={handleSaveClaim} onCancel={closeForm} />
+      )}
+      {showForm && tab === 'users' && (
+        <UserForm
+          user={editing}
+          isSuperadmin={currentUser.role === 'superadmin'}
+          onSave={handleSaveUser}
+          onCancel={closeForm}
+        />
       )}
       {showForm && tab === 'companies' && (
         <CompanyForm company={editing} onSave={handleSaveCompany} onCancel={closeForm} />
@@ -272,6 +350,10 @@ export default function App() {
           onClose={() => setClaimDetail(null)}
           onChanged={() => { claims.refresh(); docs.refresh(); }}
         />
+      )}
+
+      {rolesContract && (
+        <ContractMembers contract={rolesContract} onClose={() => setRolesContract(null)} />
       )}
     </div>
   );
