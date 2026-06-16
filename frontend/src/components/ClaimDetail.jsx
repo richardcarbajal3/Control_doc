@@ -13,14 +13,19 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
   const [pick, setPick] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [notes, setNotes] = useState({}); // id -> draft complementary note
 
   const load = useCallback(async () => {
-    try { setData(await getClaim(claim.id)); }
-    catch (e) { setError(e.message); }
+    try {
+      const fresh = await getClaim(claim.id);
+      setData(fresh);
+      setNotes(Object.fromEntries((fresh.documents || []).map((d) => [d.id, d.claim_note || ''])));
+    } catch (e) { setError(e.message); }
   }, [claim.id]);
 
   useEffect(() => { load(); }, [load]);
 
+  const isClosed = String(data?.status || claim.status || '').trim().toUpperCase() === 'CERRADO';
   const assignedIds = new Set((data?.documents || []).map((d) => d.id));
   const available = allDocuments.filter((d) => !assignedIds.has(d.id));
 
@@ -39,6 +44,16 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
     finally { setBusy(false); }
   };
 
+  // Save the complementary per-line note only when it actually changed.
+  const saveNote = async (d) => {
+    const next = notes[d.id] ?? '';
+    if (next === (d.claim_note || '')) return;
+    setBusy(true); setError('');
+    try { await updateDocument(d.id, { claim_note: next }); await load(); }
+    catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  };
+
   const docs = data?.documents || [];
 
   return (
@@ -47,6 +62,7 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
         <h2>{data?.code ? `${data.code} — ` : ''}{data?.title || claim.title}</h2>
         <p className="import-help">
           {data?.type} · Contrato {data?.n_contrato || '—'} · Estado {data?.status}
+          {isClosed && <span className="pill pill-danger" style={{ marginLeft: '0.5rem' }}>Cerrado — no acepta más documentos</span>}
         </p>
 
         {error && <div className="form-error">{error}</div>}
@@ -60,7 +76,8 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
               <thead>
                 <tr>
                   <th>DOCUMENTO NRO</th><th>DESCRIPCIÓN</th><th>FECHA</th>
-                  <th>STATUS G</th><th className="center">Atraso</th><th></th>
+                  <th>STATUS G</th><th className="center">Atraso</th>
+                  <th>Complemento</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -76,6 +93,16 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
                     </td>
                     <td className="center">{d.is_pending && d.dias_atraso > 0 ? `${d.dias_atraso} d` : '—'}</td>
                     <td>
+                      <input
+                        className="note-input"
+                        placeholder="Dato complementario…"
+                        value={notes[d.id] ?? ''}
+                        disabled={busy}
+                        onChange={(e) => setNotes((n) => ({ ...n, [d.id]: e.target.value }))}
+                        onBlur={() => saveNote(d)}
+                      />
+                    </td>
+                    <td>
                       <button className="btn btn-small btn-delete" disabled={busy} onClick={() => removeDoc(d.id)}>
                         Quitar
                       </button>
@@ -87,18 +114,22 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
           </div>
         )}
 
-        <h3 className="section-title">Agregar documento existente</h3>
-        <div className="assign-row">
-          <select className="search-input" value={pick} onChange={(e) => setPick(e.target.value)}>
-            <option value="">— Selecciona un documento —</option>
-            {available.map((d) => (
-              <option key={d.id} value={d.id}>
-                {(d.documento_nro || `#${d.id}`)} — {(d.descripcion || '').slice(0, 60)}
-              </option>
-            ))}
-          </select>
-          <button className="btn btn-primary" disabled={!pick || busy} onClick={addDoc}>Agregar</button>
-        </div>
+        {!isClosed && (
+          <>
+            <h3 className="section-title">Agregar documento existente</h3>
+            <div className="assign-row">
+              <select className="search-input" value={pick} onChange={(e) => setPick(e.target.value)}>
+                <option value="">— Selecciona un documento —</option>
+                {available.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {(d.documento_nro || `#${d.id}`)} — {(d.descripcion || '').slice(0, 60)}
+                  </option>
+                ))}
+              </select>
+              <button className="btn btn-primary" disabled={!pick || busy} onClick={addDoc}>Agregar</button>
+            </div>
+          </>
+        )}
 
         <div className="form-actions">
           <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>

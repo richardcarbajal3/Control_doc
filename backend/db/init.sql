@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS documents (
   tipo_doc VARCHAR(60),
   status_contratista VARCHAR(60),
   responsable VARCHAR(120),
+  claim_note TEXT,
   claim_id INTEGER REFERENCES claims(id) ON DELETE SET NULL,
   parent_id INTEGER REFERENCES documents(id) ON DELETE SET NULL,
   extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -123,6 +124,8 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS descripcion TEXT;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS tipo_doc VARCHAR(60);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS status_contratista VARCHAR(60);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS responsable VARCHAR(120);
+-- Complementary per-line note added while a document is linked to a claim.
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS claim_note TEXT;
 
 -- Claims and the links from documents: claim_id groups documents into a claim
 -- (claim_documents); parent_id links a letter to the document it answers (thread).

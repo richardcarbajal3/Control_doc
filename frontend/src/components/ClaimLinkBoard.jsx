@@ -10,6 +10,9 @@ export default function ClaimLinkBoard({ documents, claims, onAssign, onUnassign
   const [overClaim, setOverClaim] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [filter, setFilter] = useState('all'); // all | unlinked
+  const [msg, setMsg] = useState('');
+
+  const isClosed = (c) => String(c.status || '').trim().toUpperCase() === 'CERRADO';
 
   const docsByClaim = useMemo(() => {
     const m = new Map();
@@ -30,6 +33,11 @@ export default function ClaimLinkBoard({ documents, claims, onAssign, onUnassign
     const doc = documents.find((d) => d.id === dragId);
     setDragId(null);
     if (!doc || doc.claim_id === claim.id) return;
+    if (isClosed(claim)) {
+      setMsg(`"${claim.code || claim.title}" está cerrado y no acepta más documentos.`);
+      return;
+    }
+    setMsg('');
     onAssign(doc.id, claim.id);
   };
 
@@ -85,16 +93,18 @@ export default function ClaimLinkBoard({ documents, claims, onAssign, onUnassign
           <span className="section-title">Claims ({claims.length})</span>
         </div>
         <p className="import-help">Suelta aquí para vincular. Haz clic en un claim para ver sus documentos.</p>
+        {msg && <div className="form-error">{msg}</div>}
         <div className="drop-list">
           {claims.length === 0 && <div className="empty-state"><p>Sin claims</p></div>}
           {claims.map((c) => {
             const linked = docsByClaim.get(c.id) || [];
             const isOpen = !!expanded[c.id];
+            const closed = isClosed(c);
             return (
               <div
                 key={c.id}
-                className={`claim-drop-card ${overClaim === c.id ? 'drag-over' : ''}`}
-                onDragOver={(e) => { e.preventDefault(); setOverClaim(c.id); }}
+                className={`claim-drop-card ${overClaim === c.id ? 'drag-over' : ''} ${closed ? 'claim-closed' : ''}`}
+                onDragOver={(e) => { if (!closed) { e.preventDefault(); setOverClaim(c.id); } }}
                 onDragLeave={() => setOverClaim((id) => (id === c.id ? null : id))}
                 onDrop={() => handleDrop(c)}
               >
@@ -116,7 +126,10 @@ export default function ClaimLinkBoard({ documents, claims, onAssign, onUnassign
                       ? <div className="claim-drop-empty">Arrastra documentos aquí</div>
                       : linked.map((d) => (
                           <div key={d.id} className="claim-doc-row">
-                            <span>{label(d)}</span>
+                            <span className="claim-doc-label">
+                              {label(d)}
+                              {d.claim_note && <span className="claim-doc-note">— {d.claim_note}</span>}
+                            </span>
                             <button className="chip-x" disabled={busy} onClick={() => onUnassign(d.id)}>✕</button>
                           </div>
                         ))}

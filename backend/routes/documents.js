@@ -13,7 +13,25 @@ const DOC_COLUMNS = [
 
 // Link columns settable via create/update (not part of the paste grid).
 const LINK_COLUMNS = ['claim_id', 'parent_id'];
-const WRITE_COLUMNS = [...DOC_COLUMNS, ...LINK_COLUMNS];
+// Annotations set in the claim workspace (complementary per-line data).
+const ANNOTATION_COLUMNS = ['claim_note'];
+const WRITE_COLUMNS = [...DOC_COLUMNS, ...LINK_COLUMNS, ...ANNOTATION_COLUMNS];
+
+// A Cerrado claim no longer accepts documents. Rejects an attempt to link a
+// document to a closed claim; unlinking (claim_id null/empty) is always allowed.
+async function assertClaimAcceptsDocs(body) {
+  if (!Object.prototype.hasOwnProperty.call(body, 'claim_id')) return;
+  const raw = body.claim_id;
+  if (raw == null || raw === '') return;
+  const id = parseInt(raw, 10);
+  if (!Number.isFinite(id)) return;
+  const { rows } = await pool.query('SELECT status FROM claims WHERE id = $1', [id]);
+  if (rows.length && String(rows[0].status || '').trim().toUpperCase() === 'CERRADO') {
+    const err = new Error('El claim está cerrado y no acepta más documentos');
+    err.statusCode = 409;
+    throw err;
+  }
+}
 
 // A document is PENDING when STATUS G is not "ATENDIDO"; due 3 days after FECHA.
 const PENDING_SQL = "UPPER(TRIM(COALESCE(status_g,''))) <> 'ATENDIDO'";
@@ -89,6 +107,7 @@ function buildFields(body) {
 // Crear documento
 router.post('/', async (req, res) => {
   try {
+    await assertClaimAcceptsDocs(req.body);
     const { cols, placeholders, values } = buildFields(req.body);
     const sql = cols.length
       ? `INSERT INTO documents (${cols.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`
@@ -96,13 +115,14 @@ router.post('/', async (req, res) => {
     const { rows } = await pool.query(sql, values);
     res.status(201).json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.message });
   }
 });
 
 // Actualizar documento (parcial: solo los campos enviados)
 router.put('/:id', async (req, res) => {
   try {
+    await assertClaimAcceptsDocs(req.body);
     const { cols, values, nextParam } = buildFields(req.body);
     if (cols.length === 0) return res.status(400).json({ error: 'No hay campos para actualizar' });
     const setClause = cols.map((c, i) => `${c} = $${i + 1}`).join(', ');
@@ -115,7 +135,7 @@ router.put('/:id', async (req, res) => {
     }
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.message });
   }
 });
 
