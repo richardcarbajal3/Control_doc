@@ -14,7 +14,8 @@ const DOC_COLUMNS = [
 // Link columns settable via create/update (not part of the paste grid).
 const LINK_COLUMNS = ['claim_id', 'parent_id'];
 // Annotations set in the claim workspace (complementary per-line data).
-const ANNOTATION_COLUMNS = ['claim_note'];
+const ANNOTATION_COLUMNS = ['claim_note', 'claim_data'];
+const JSON_COLUMNS = ['claim_data'];
 const WRITE_COLUMNS = [...DOC_COLUMNS, ...LINK_COLUMNS, ...ANNOTATION_COLUMNS];
 
 // A Cerrado claim no longer accepts documents. Rejects an attempt to link a
@@ -80,6 +81,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Parse a JSON string defensively; non-JSON falls back to an empty object.
+function safeParse(s) {
+  try { const o = JSON.parse(s); return o && typeof o === 'object' ? o : {}; }
+  catch { return {}; }
+}
+
 // Build (columns, placeholders, values) for the documents register fields.
 // Only columns present in the body are included, so a partial update (e.g.
 // assigning a claim) never nulls out the fields it did not send.
@@ -91,11 +98,16 @@ function buildFields(body) {
   for (const c of WRITE_COLUMNS) {
     if (!Object.prototype.hasOwnProperty.call(body, c)) continue;
     let v = body[c];
-    if (typeof v === 'string') v = v.trim();
-    if (v === '' || v === undefined) v = null;
-    if (LINK_COLUMNS.includes(c) && v != null) {
-      const n = parseInt(v, 10);
-      v = Number.isFinite(n) ? n : null;
+    if (JSON_COLUMNS.includes(c)) {
+      // Accept an object or a JSON string; store as JSONB text.
+      v = v == null ? null : JSON.stringify(typeof v === 'string' ? safeParse(v) : v);
+    } else {
+      if (typeof v === 'string') v = v.trim();
+      if (v === '' || v === undefined) v = null;
+      if (LINK_COLUMNS.includes(c) && v != null) {
+        const n = parseInt(v, 10);
+        v = Number.isFinite(n) ? n : null;
+      }
     }
     cols.push(c);
     placeholders.push(`$${p++}`);

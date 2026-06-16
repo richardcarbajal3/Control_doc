@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getClaim } from '../api/claims';
 import { updateDocument } from '../api/documents';
+import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
 
 function fmtDate(v) {
   if (!v) return '';
@@ -13,13 +14,13 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
   const [pick, setPick] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [notes, setNotes] = useState({}); // id -> draft complementary note
+  const [lineData, setLineData] = useState({}); // id -> { campo1, campo2, ... } draft
 
   const load = useCallback(async () => {
     try {
       const fresh = await getClaim(claim.id);
       setData(fresh);
-      setNotes(Object.fromEntries((fresh.documents || []).map((d) => [d.id, d.claim_note || ''])));
+      setLineData(Object.fromEntries((fresh.documents || []).map((d) => [d.id, { ...(d.claim_data || {}) }])));
     } catch (e) { setError(e.message); }
   }, [claim.id]);
 
@@ -44,12 +45,16 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
     finally { setBusy(false); }
   };
 
-  // Save the complementary per-line note only when it actually changed.
-  const saveNote = async (d) => {
-    const next = notes[d.id] ?? '';
-    if (next === (d.claim_note || '')) return;
+  const setField = (id, key, value) =>
+    setLineData((s) => ({ ...s, [id]: { ...s[id], [key]: value } }));
+
+  // Persist a line's complementary fields only when something actually changed.
+  const saveLine = async (d) => {
+    const next = lineData[d.id] || {};
+    const prev = d.claim_data || {};
+    if (JSON.stringify(next) === JSON.stringify(prev)) return;
     setBusy(true); setError('');
-    try { await updateDocument(d.id, { claim_note: next }); await load(); }
+    try { await updateDocument(d.id, { claim_data: next }); await load(); }
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
@@ -77,7 +82,8 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
                 <tr>
                   <th>DOCUMENTO NRO</th><th>DESCRIPCIÓN</th><th>FECHA</th>
                   <th>STATUS G</th><th className="center">Atraso</th>
-                  <th>Complemento</th><th></th>
+                  {CLAIM_LINE_FIELDS.map((f) => <th key={f.key}>{f.label}</th>)}
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -92,16 +98,18 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
                         : <span className="pill pill-ok">{d.status_g}</span>}
                     </td>
                     <td className="center">{d.is_pending && d.dias_atraso > 0 ? `${d.dias_atraso} d` : '—'}</td>
-                    <td>
-                      <input
-                        className="note-input"
-                        placeholder="Dato complementario…"
-                        value={notes[d.id] ?? ''}
-                        disabled={busy}
-                        onChange={(e) => setNotes((n) => ({ ...n, [d.id]: e.target.value }))}
-                        onBlur={() => saveNote(d)}
-                      />
-                    </td>
+                    {CLAIM_LINE_FIELDS.map((f) => (
+                      <td key={f.key}>
+                        <input
+                          className="note-input"
+                          placeholder={f.label}
+                          value={(lineData[d.id]?.[f.key]) ?? ''}
+                          disabled={busy}
+                          onChange={(e) => setField(d.id, f.key, e.target.value)}
+                          onBlur={() => saveLine(d)}
+                        />
+                      </td>
+                    ))}
                     <td>
                       <button className="btn btn-small btn-delete" disabled={busy} onClick={() => removeDoc(d.id)}>
                         Quitar

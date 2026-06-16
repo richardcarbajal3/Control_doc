@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react';
 import { CLAIM_STATUS_COLORS } from '../lib/claimOptions';
+import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
+
+// Compact "Campo 1: x · Campo 2: y" summary of a document's claim_data.
+function lineSummary(d) {
+  const data = d.claim_data || {};
+  return CLAIM_LINE_FIELDS
+    .filter((f) => data[f.key] != null && data[f.key] !== '')
+    .map((f) => `${f.label}: ${data[f.key]}`)
+    .join(' · ');
+}
 
 // Side-by-side board to link documents to claims by dragging. Left pane lists
 // documents (draggable); right pane lists claims as drop targets. Dropping a
@@ -128,7 +138,7 @@ export default function ClaimLinkBoard({ documents, claims, onAssign, onUnassign
                           <div key={d.id} className="claim-doc-row">
                             <span className="claim-doc-label">
                               {label(d)}
-                              {d.claim_note && <span className="claim-doc-note">— {d.claim_note}</span>}
+                              {lineSummary(d) && <span className="claim-doc-note">— {lineSummary(d)}</span>}
                             </span>
                             <button className="chip-x" disabled={busy} onClick={() => onUnassign(d.id)}>✕</button>
                           </div>
