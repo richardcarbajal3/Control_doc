@@ -14,6 +14,9 @@ import ClaimDetail from './components/ClaimDetail';
 import ContractMembers from './components/ContractMembers';
 import UserList from './components/UserList';
 import UserForm from './components/UserForm';
+import OrgList from './components/OrgList';
+import OrgForm from './components/OrgForm';
+import AssignAdminForm from './components/AssignAdminForm';
 import Login from './components/Login';
 import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
@@ -26,6 +29,9 @@ import { getProjects, createProject, updateProject, deleteProject } from './api/
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
 import { getClaims, createClaim, updateClaim, deleteClaim } from './api/claims';
 import { getUsers, createUser, updateUser, deleteUser } from './api/users';
+import {
+  getOrganizations, createOrganization, updateOrganization, deleteOrganization, assignOrgAdmin,
+} from './api/organizations';
 import { getMe, logout } from './api/auth';
 import { getToken } from './api/http';
 
@@ -76,23 +82,48 @@ export default function App() {
     return () => window.removeEventListener('cd-unauthorized', onUnauth);
   }, []);
 
+  const onLogout = () => { logout(); setUser(null); };
+
   if (checking) return <div className="loading">Cargando…</div>;
   if (!user) return <Login onLoggedIn={setUser} />;
-  return <Dashboard currentUser={user} onLogout={() => { logout(); setUser(null); }} />;
+  if (user.role !== 'superadmin' && user.organization_id == null) {
+    return <NoAccess user={user} onLogout={onLogout} />;
+  }
+  return <Dashboard currentUser={user} onLogout={onLogout} />;
+}
+
+// Shown to a self-registered user who has not been assigned to a client yet.
+function NoAccess({ user, onLogout }) {
+  return (
+    <div className="login-screen">
+      <div className="login-card">
+        <h1>Control Doc</h1>
+        <p className="login-sub">Hola, {user.full_name || user.email}</p>
+        <p>Tu cuenta fue creada pero aún <strong>no está asignada a un cliente</strong>.
+          El administrador debe habilitarte el acceso. Vuelve a intentar más tarde.</p>
+        <button className="btn btn-secondary btn-block" onClick={onLogout}>Salir</button>
+      </div>
+    </div>
+  );
 }
 
 function Dashboard({ currentUser, onLogout }) {
-  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
-  const TABS = isAdmin
-    ? [...BASE_TABS.slice(0, 5), { key: 'users', label: 'Usuarios' }, ...BASE_TABS.slice(5)]
-    : BASE_TABS;
+  const isOwner = currentUser.role === 'superadmin';
+  const isAdmin = isOwner || currentUser.role === 'admin';
+  const TABS = [
+    ...(isOwner ? [{ key: 'organizations', label: 'Organizaciones' }] : []),
+    ...BASE_TABS.slice(0, 5),
+    ...(isAdmin ? [{ key: 'users', label: 'Usuarios' }] : []),
+    ...BASE_TABS.slice(5),
+  ];
 
-  const [tab, setTab] = useState('documents');
+  const [tab, setTab] = useState(isOwner ? 'organizations' : 'documents');
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState(null);
   const [claimDetail, setClaimDetail] = useState(null);
   const [rolesContract, setRolesContract] = useState(null);
+  const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
   const docs = useModule(getDocuments);
@@ -101,6 +132,7 @@ function Dashboard({ currentUser, onLogout }) {
   const projects = useModule(getProjects);
   const contracts = useModule(getContracts);
   const users = useModule(getUsers);
+  const orgs = useModule(isOwner ? getOrganizations : async () => []);
 
   const openCreate = () => { setDeleteError(''); setEditing(null); setShowForm(true); };
   const openEdit = (item) => { setDeleteError(''); setEditing(item); setShowForm(true); };
@@ -179,6 +211,22 @@ function Dashboard({ currentUser, onLogout }) {
     }
   };
 
+  const handleSaveOrg = async (data) => {
+    if (editing) await updateOrganization(editing.id, data);
+    else await createOrganization(data);
+    closeForm(); orgs.refresh();
+  };
+  const handleDeleteOrg = async (o) => {
+    if (window.confirm(`¿Eliminar el cliente "${o.name}"? (sus usuarios quedan sin organización)`)) {
+      try { await deleteOrganization(o.id); orgs.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
+  };
+  const handleAssignAdmin = async (data) => {
+    await assignOrgAdmin(assignAdminOrg.id, data);
+    setAssignAdminOrg(null); orgs.refresh();
+  };
+
   const tabConfig = {
     documents: { label: 'Documento', searchPlaceholder: 'Buscar documento (nro, descripción, contrato)...' },
     claims: { label: 'Claim', searchPlaceholder: 'Buscar claim (código, título, contrato)...' },
@@ -186,9 +234,10 @@ function Dashboard({ currentUser, onLogout }) {
     projects: { label: 'Proyecto', searchPlaceholder: 'Buscar por código o nombre...' },
     contracts: { label: 'Contrato', searchPlaceholder: 'Buscar por código o título...' },
     users: { label: 'Usuario', searchPlaceholder: 'Usuarios…' },
+    organizations: { label: 'Cliente', searchPlaceholder: 'Clientes…' },
   };
 
-  const activeModule = { documents: docs, claims, companies, projects, contracts, users }[tab];
+  const activeModule = { documents: docs, claims, companies, projects, contracts, users, organizations: orgs }[tab];
   const cfg = tabConfig[tab];
   const importConfig = IMPORT_CONFIGS[tab];
 
@@ -213,7 +262,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setRolesContract(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -235,9 +284,11 @@ function Dashboard({ currentUser, onLogout }) {
                 value={activeModule.search}
                 onChange={(e) => activeModule.setSearch(e.target.value)}
               />
-              <button className="btn btn-secondary" onClick={() => setShowImport(true)}>
-                📋 Pegar desde Excel
-              </button>
+              {importConfig && (
+                <button className="btn btn-secondary" onClick={() => setShowImport(true)}>
+                  📋 Pegar desde Excel
+                </button>
+              )}
               <button className="btn btn-primary" onClick={openCreate}>
                 + Nuevo {cfg.label}
               </button>
@@ -287,6 +338,14 @@ function Dashboard({ currentUser, onLogout }) {
                     onDelete={handleDeleteUser}
                   />
                 )}
+                {tab === 'organizations' && (
+                  <OrgList
+                    organizations={orgs.items}
+                    onEdit={openEdit}
+                    onDelete={handleDeleteOrg}
+                    onAssignAdmin={setAssignAdminOrg}
+                  />
+                )}
               </>
             )}
           </>
@@ -312,6 +371,12 @@ function Dashboard({ currentUser, onLogout }) {
           onSave={handleSaveUser}
           onCancel={closeForm}
         />
+      )}
+      {showForm && tab === 'organizations' && (
+        <OrgForm org={editing} onSave={handleSaveOrg} onCancel={closeForm} />
+      )}
+      {assignAdminOrg && (
+        <AssignAdminForm org={assignAdminOrg} onSave={handleAssignAdmin} onCancel={() => setAssignAdminOrg(null)} />
       )}
       {showForm && tab === 'companies' && (
         <CompanyForm company={editing} onSave={handleSaveCompany} onCancel={closeForm} />

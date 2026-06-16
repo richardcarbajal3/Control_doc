@@ -12,8 +12,9 @@ const claimsRouter = require('./routes/claims');
 const reportsRouter = require('./routes/reports');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
+const organizationsRouter = require('./routes/organizations');
 const contractMembersRouter = require('./routes/contractMembers');
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth, requireOrgAccess } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,15 +30,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Everything below requires a valid session.
+// Account administration (each router enforces its own role).
 app.use('/api/users', usersRouter);
+app.use('/api/organizations', organizationsRouter);
 app.use('/api/contracts/:contractId/members', contractMembersRouter);
-app.use('/api/documents', requireAuth, documentsRouter);
-app.use('/api/companies', requireAuth, companiesRouter);
-app.use('/api/projects', requireAuth, projectsRouter);
-app.use('/api/contracts', requireAuth, contractsRouter);
-app.use('/api/claims', requireAuth, claimsRouter);
-app.use('/api/reports', requireAuth, reportsRouter);
+
+// Data routes: require a session AND belonging to an organization (or owner).
+app.use('/api/documents', requireAuth, requireOrgAccess, documentsRouter);
+app.use('/api/companies', requireAuth, requireOrgAccess, companiesRouter);
+app.use('/api/projects', requireAuth, requireOrgAccess, projectsRouter);
+app.use('/api/contracts', requireAuth, requireOrgAccess, contractsRouter);
+app.use('/api/claims', requireAuth, requireOrgAccess, claimsRouter);
+app.use('/api/reports', requireAuth, requireOrgAccess, reportsRouter);
 
 // Servir frontend compilado en producción
 const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');

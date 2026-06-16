@@ -42,19 +42,26 @@ async function seedAuth() {
       );
     }
 
-    const email = normalizeEmail(process.env.SUPERADMIN_EMAIL || 'soporte@cognify.institute');
-    const { rows } = await pool.query("SELECT id FROM users WHERE role = 'superadmin' LIMIT 1");
-    if (rows.length === 0) {
+    // The app owner. Ensured as superadmin on every boot (even on an existing
+    // database that already had a different superadmin).
+    const email = normalizeEmail(process.env.SUPERADMIN_EMAIL || 'richard.carbajal3@gmail.com');
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length === 0) {
       const password = process.env.SUPERADMIN_PASSWORD || 'ChangeMe123!';
       await pool.query(
         `INSERT INTO users (email, full_name, password_hash, role, is_active)
-         VALUES ($1, $2, $3, 'superadmin', TRUE)
-         ON CONFLICT (email) DO UPDATE SET role = 'superadmin'`,
+         VALUES ($1, $2, $3, 'superadmin', TRUE)`,
         [email, 'Administrador', hashPassword(password)]
       );
       console.log(`Superadmin sembrado: ${email}`);
       if (!process.env.SUPERADMIN_PASSWORD) {
         console.warn('⚠️ Usando contraseña por defecto del superadmin. Define SUPERADMIN_PASSWORD.');
+      }
+    } else {
+      await pool.query("UPDATE users SET role = 'superadmin', is_active = TRUE WHERE email = $1", [email]);
+      if (process.env.SUPERADMIN_PASSWORD) {
+        await pool.query('UPDATE users SET password_hash = $2 WHERE email = $1',
+          [email, hashPassword(process.env.SUPERADMIN_PASSWORD)]);
       }
     }
   } catch (err) {

@@ -607,6 +607,7 @@ tr:hover {
 .login-card h1 { color: #1e3a5f; margin: 0 0 0.25rem; }
 .login-sub { color: #6b7280; margin: 0 0 1.25rem; font-size: 0.9rem; }
 .btn-block { width: 100%; justify-content: center; margin-top: 0.5rem; }
+.login-toggle { margin-top: 1rem; text-align: center; font-size: 0.85rem; color: #6b7280; }
 
 /* Responsive */
 @media (max-width: 640px) {

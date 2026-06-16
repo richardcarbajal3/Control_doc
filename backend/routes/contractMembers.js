@@ -3,30 +3,31 @@ const router = express.Router({ mergeParams: true });
 const { pool } = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { normalizeEmail, CONTRACT_ROLES } = require('../lib/auth');
-const { isEmailAllowed } = require('../lib/access');
 
 // Only admins/superadmins manage who is assigned to a contract and with what role.
 router.use(requireAuth, requireRole('admin', 'superadmin'));
 
 // Find a user by email, creating a pending account (no password) if needed so
-// an admin can assign roles before the person has logged in.
-async function ensureUser(email, full_name) {
+// an admin can assign roles before the person has logged in. The user is
+// attached to the acting admin's organization.
+async function ensureUser(email, full_name, orgId) {
   const safeEmail = normalizeEmail(email);
   if (!safeEmail || !safeEmail.includes('@')) throw new Error(`Correo inválido: ${email}`);
-  if (!(await isEmailAllowed(safeEmail))) throw new Error(`Dominio no permitido: ${safeEmail}`);
   const { rows } = await pool.query(
-    `INSERT INTO users (email, full_name, role)
-       VALUES ($1, $2, 'member')
-     ON CONFLICT (email) DO UPDATE SET full_name = COALESCE(users.full_name, EXCLUDED.full_name)
+    `INSERT INTO users (email, full_name, role, organization_id)
+       VALUES ($1, $2, 'member', $3)
+     ON CONFLICT (email) DO UPDATE
+       SET full_name = COALESCE(users.full_name, EXCLUDED.full_name),
+           organization_id = COALESCE(users.organization_id, EXCLUDED.organization_id)
      RETURNING id`,
-    [safeEmail, full_name || null]
+    [safeEmail, full_name || null, orgId || null]
   );
   return rows[0].id;
 }
 
-async function assignMember(contractId, { email, role, full_name }) {
+async function assignMember(contractId, { email, role, full_name }, actor) {
   const safeRole = CONTRACT_ROLES.includes(role) ? role : 'lector';
-  const userId = await ensureUser(email, full_name);
+  const userId = await ensureUser(email, full_name, actor.organization_id);
   await pool.query(
     `INSERT INTO contract_members (contract_id, user_id, role)
        VALUES ($1, $2, $3)
@@ -55,7 +56,7 @@ router.get('/', async (req, res) => {
 // POST /api/contracts/:contractId/members  { email, role, full_name? }
 router.post('/', async (req, res) => {
   try {
-    await assignMember(req.params.contractId, req.body);
+    await assignMember(req.params.contractId, req.body, req.user);
     res.status(201).json({ message: 'Miembro asignado' });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -68,7 +69,7 @@ router.post('/bulk', async (req, res) => {
   let inserted = 0;
   const errors = [];
   for (let i = 0; i < rows.length; i++) {
-    try { await assignMember(req.params.contractId, rows[i]); inserted++; }
+    try { await assignMember(req.params.contractId, rows[i], req.user); inserted++; }
     catch (err) { errors.push({ row: i + 1, error: err.message }); }
   }
   res.json({ inserted, failed: errors.length, errors });

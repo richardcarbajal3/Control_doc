@@ -3,14 +3,13 @@ const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { hashPassword, normalizeEmail, ACCOUNT_ROLES } = require('../lib/auth');
-const { isEmailAllowed } = require('../lib/access');
 
 // All user administration requires an admin or superadmin.
 router.use(requireAuth, requireRole('admin', 'superadmin'));
 
 const publicUser = (u) => ({
   id: u.id, email: u.email, full_name: u.full_name, role: u.role,
-  company_id: u.company_id, is_active: u.is_active, created_at: u.created_at,
+  organization_id: u.organization_id, is_active: u.is_active, created_at: u.created_at,
 });
 
 // An admin may only grant member/admin; only a superadmin may grant superadmin.
@@ -20,24 +19,28 @@ function sanitizeRole(requestedRole, actor) {
   return role;
 }
 
-// Create or update a user from an email/role pair. Returns the user row.
-async function upsertUser({ email, full_name, role, password }, actor) {
+// Create or update a user. An org admin authorizes an email into their own
+// organization (any domain). A superadmin may target any organization.
+async function upsertUser({ email, full_name, role, password, organization_id }, actor) {
   const safeEmail = normalizeEmail(email);
   if (!safeEmail || !safeEmail.includes('@')) throw new Error(`Correo inválido: ${email}`);
-  if (!(await isEmailAllowed(safeEmail))) throw new Error(`Dominio no permitido: ${safeEmail}`);
   const safeRole = sanitizeRole(role, actor);
   const hash = password ? hashPassword(password) : null;
+  const orgId = actor.role === 'admin'
+    ? actor.organization_id
+    : (organization_id || null);
 
   const { rows } = await pool.query(
-    `INSERT INTO users (email, full_name, role, password_hash, company_id)
+    `INSERT INTO users (email, full_name, role, password_hash, organization_id)
        VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (email) DO UPDATE
        SET full_name = COALESCE(EXCLUDED.full_name, users.full_name),
            role = EXCLUDED.role,
+           organization_id = COALESCE(EXCLUDED.organization_id, users.organization_id),
            password_hash = COALESCE(EXCLUDED.password_hash, users.password_hash),
            updated_at = NOW()
      RETURNING *`,
-    [safeEmail, full_name || null, safeRole, hash, actor.role === 'admin' ? actor.company_id : null]
+    [safeEmail, full_name || null, safeRole, hash, orgId]
   );
   return rows[0];
 }
@@ -46,9 +49,9 @@ router.get('/', async (req, res) => {
   try {
     const params = [];
     let q = 'SELECT * FROM users';
-    if (req.user.role === 'admin' && req.user.company_id) {
-      q += ' WHERE company_id = $1 OR role <> $2';
-      params.push(req.user.company_id, 'superadmin');
+    if (req.user.role === 'admin') {
+      q += ' WHERE organization_id = $1';
+      params.push(req.user.organization_id);
     }
     q += ' ORDER BY created_at DESC';
     const { rows } = await pool.query(q, params);

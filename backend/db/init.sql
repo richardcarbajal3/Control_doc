@@ -133,16 +133,27 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES docu
 
 -- =========================================================================
 -- Authentication & access control (see docs T-12/T-13/T-15)
--- Users sign in with a corporate email + password. Roles are two-level:
---   account role (superadmin / admin / member) and per-contract role
---   (control_documentario / colaborador / lector) in contract_members.
+-- Users sign in with an email + password. The app owner (superadmin) sells
+-- subscriptions: each client is an organization, and the superadmin assigns a
+-- user as that organization's admin. The org admin then authorizes other
+-- emails into the organization (regardless of their domain).
 -- =========================================================================
+CREATE TABLE IF NOT EXISTS organizations (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'active',
+  plan VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
   full_name VARCHAR(255),
   password_hash VARCHAR(255),
   role VARCHAR(30) NOT NULL DEFAULT 'member',
+  organization_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL,
   company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT NOW(),
@@ -170,3 +181,4 @@ CREATE TABLE IF NOT EXISTS allowed_domains (
 -- Self-healing (idempotent) for existing databases.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL;
