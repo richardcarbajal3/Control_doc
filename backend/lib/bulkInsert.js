@@ -52,6 +52,9 @@ function createBulkHandler({
   required = [],
   dateColumns = [],
   numericColumns = [],
+  transforms = {},
+  rowTransform = null,
+  prepare = null,
   maxRows = 5000,
 }) {
   return async (req, res) => {
@@ -64,6 +67,8 @@ function createBulkHandler({
     const result = { inserted: 0, failed: 0, errors: [] };
     try {
       await client.query('BEGIN');
+      // One-time setup (e.g. resolve foreign keys for the whole batch).
+      const ctx = prepare ? await prepare(rows, client) : null;
       for (let i = 0; i < rows.length; i++) {
         const raw = rows[i] && typeof rows[i] === 'object' ? rows[i] : {};
         const known = {};
@@ -78,6 +83,11 @@ function createBulkHandler({
             if (v !== '' && v != null) extra[k] = v;
           }
         }
+
+        // Row-level hook: may derive/adjust `known` columns from `extra` values
+        // and the prepared `ctx` (e.g. resolve contractor_id from RUC, or pick
+        // the contract amount from the matching currency column).
+        if (rowTransform) rowTransform(known, extra, ctx);
 
         const missing = required.filter((c) => known[c] == null || String(known[c]).trim() === '');
         if (missing.length) {
@@ -100,6 +110,7 @@ function createBulkHandler({
           let v = known[c];
           if (typeof v === 'string') v = v.trim();
           if (v === '') v = null;
+          if (v != null && transforms[c]) v = transforms[c](v);
           if (v != null && numericColumns.includes(c)) v = parseNumberValue(v);
           if (v != null && dateColumns.includes(c)) v = parseDateValue(v);
           cols.push(c);

@@ -52,13 +52,21 @@ export default function DocumentForm({ document, claims = [], documents = [], on
                 {f.type === 'textarea' ? (
                   <textarea id={f.key} name={f.key} rows={2} value={form[f.key]} onChange={handleChange} />
                 ) : (
-                  <input
-                    id={f.key}
-                    name={f.key}
-                    type={f.type === 'date' ? 'date' : 'text'}
-                    value={form[f.key]}
-                    onChange={handleChange}
-                  />
+                  <>
+                    <input
+                      id={f.key}
+                      name={f.key}
+                      type={f.type === 'date' ? 'date' : 'text'}
+                      value={form[f.key]}
+                      onChange={handleChange}
+                      list={f.options ? `${f.key}-options` : undefined}
+                    />
+                    {f.options && (
+                      <datalist id={`${f.key}-options`}>
+                        {f.options.map((o) => <option key={o} value={o} />)}
+                      </datalist>
+                    )}
+                  </>
                 )}
               </div>
             ))}

@@ -15,6 +15,14 @@ const SOURCES = [
 // Internal/derived columns we don't want as their own report columns.
 const HIDDEN = new Set(['extra_data']);
 
+// Columns offered as dropdown filters per source (besides the free-text box).
+const FILTERABLE = {
+  documents: ['n_contrato', 'contrato', 'status', 'status_g', 'status_contratista', 'empresa', 'responsable', 'tipo_doc'],
+  contracts: ['type', 'currency', 'status', 'contractor_name'],
+  companies: ['tipo', 'estado', 'pais'],
+  projects: ['tipo', 'estado'],
+};
+
 function formatCell(v) {
   if (v == null) return '';
   if (typeof v === 'object') return JSON.stringify(v);
@@ -29,6 +37,7 @@ export default function ReportView() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [colFilters, setColFilters] = useState({}); // key -> selected value
 
   useEffect(() => {
     let alive = true;
@@ -81,11 +90,29 @@ export default function ReportView() {
     [baseCols, extraCols]
   );
 
+  // Dropdown filters: each filterable column with the distinct values present.
+  const filterControls = useMemo(() => {
+    const keys = FILTERABLE[source] || [];
+    return keys
+      .map((key) => {
+        const col = baseCols.find((c) => c.key === key);
+        if (!col) return null;
+        const values = [...new Set(flatRows.map((r) => r[key]).filter((v) => v != null && v !== ''))]
+          .sort((a, b) => String(a).localeCompare(String(b), 'es'));
+        return values.length ? { key, label: col.label, values } : null;
+      })
+      .filter(Boolean);
+  }, [source, baseCols, flatRows]);
+
   const filtered = useMemo(() => {
-    if (!filter.trim()) return flatRows;
-    const f = filter.toLowerCase();
-    return flatRows.filter((r) => allKeys.some((k) => String(r[k] ?? '').toLowerCase().includes(f)));
-  }, [flatRows, filter, allKeys]);
+    const f = filter.trim().toLowerCase();
+    const active = Object.entries(colFilters).filter(([, v]) => v);
+    return flatRows.filter((r) => {
+      if (active.some(([k, v]) => String(r[k] ?? '') !== v)) return false;
+      if (f && !allKeys.some((k) => String(r[k] ?? '').toLowerCase().includes(f))) return false;
+      return true;
+    });
+  }, [flatRows, filter, colFilters, allKeys]);
 
   const downloadCsv = () => {
     const headers = [...baseCols.map((c) => c.label), ...extraCols];
@@ -112,7 +139,7 @@ export default function ReportView() {
             <button
               key={s.key}
               className={`chip ${source === s.key ? 'chip-active' : ''}`}
-              onClick={() => { setSource(s.key); setFilter(''); }}
+              onClick={() => { setSource(s.key); setFilter(''); setColFilters({}); }}
             >
               {s.label}
             </button>
@@ -128,6 +155,26 @@ export default function ReportView() {
           ⬇ CSV
         </button>
       </div>
+
+      {filterControls.length > 0 && (
+        <div className="report-filters">
+          {filterControls.map((fc) => (
+            <label key={fc.key} className="report-filter">
+              <span>{fc.label}</span>
+              <select
+                value={colFilters[fc.key] || ''}
+                onChange={(e) => setColFilters((s) => ({ ...s, [fc.key]: e.target.value }))}
+              >
+                <option value="">Todos</option>
+                {fc.values.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </label>
+          ))}
+          {Object.values(colFilters).some(Boolean) && (
+            <button className="chip" onClick={() => setColFilters({})}>Limpiar filtros</button>
+          )}
+        </div>
+      )}
 
       <div className="report-summary">
         {loading ? 'Cargando…' : `${filtered.length} registro(s)`}

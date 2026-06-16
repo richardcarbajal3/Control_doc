@@ -624,3 +624,96 @@ tr:hover {
     flex-direction: column;
   }
 }
+
+/* ── Claim linking board (drag & drop, Documents tab) ───────────────── */
+.claim-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.claim-board-pane {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  min-height: 200px;
+}
+.claim-board-head { display: flex; justify-content: space-between; align-items: center; }
+.mini-select { padding: 0.25rem 0.4rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; }
+.drag-list, .drop-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; }
+
+.doc-drag-card {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.6rem;
+  border: 1px solid #e2e8f0; border-left: 3px solid #3b82f6;
+  border-radius: 6px; padding: 0.45rem 0.6rem; background: #f8fafc;
+  cursor: grab;
+}
+.doc-drag-card.dragging { opacity: 0.5; }
+.doc-drag-main { display: flex; flex-direction: column; min-width: 0; }
+.doc-drag-code { font-weight: 600; font-size: 0.85rem; color: #1e3a5f; }
+.doc-drag-desc { font-size: 0.78rem; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-drag-meta { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.doc-linked { font-size: 0.75rem; color: #475569; display: inline-flex; align-items: center; gap: 0.25rem; }
+
+.claim-drop-card {
+  border: 1px solid #e2e8f0; border-radius: 6px; background: #fff;
+  transition: background 0.12s, border-color 0.12s;
+}
+.claim-drop-card.drag-over { border-color: #10b981; background: #ecfdf5; box-shadow: 0 0 0 2px #10b98133; }
+.claim-drop-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+  padding: 0.55rem 0.7rem; cursor: pointer;
+}
+.claim-drop-title { font-weight: 600; font-size: 0.85rem; color: #1e3a5f; }
+.caret { color: #94a3b8; margin-right: 0.35rem; }
+.claim-drop-tags { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.count-pill { font-size: 0.72rem; background: #e2e8f0; color: #475569; border-radius: 10px; padding: 0.1rem 0.5rem; }
+.claim-drop-docs { padding: 0.2rem 0.7rem 0.6rem; border-top: 1px dashed #e2e8f0; }
+.claim-drop-empty { font-size: 0.78rem; color: #94a3b8; padding: 0.4rem 0; }
+.claim-doc-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding: 0.2rem 0; color: #334155; }
+.chip-x {
+  border: none; background: transparent; color: #ef4444; cursor: pointer;
+  font-size: 0.8rem; padding: 0 0.2rem; line-height: 1;
+}
+.chip-x:disabled { color: #cbd5e1; cursor: default; }
+
+@media (max-width: 800px) {
+  .claim-board { grid-template-columns: 1fr; }
+}
+
+/* ── Claim complementary note + closed claim + report filters ───────── */
+.note-input {
+  width: 100%; min-width: 140px; padding: 0.3rem 0.4rem;
+  border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem;
+}
+.claim-drop-card.claim-closed { opacity: 0.65; background: #f8fafc; }
+.claim-drop-card.claim-closed .claim-drop-head { cursor: pointer; }
+.claim-doc-label { display: inline-flex; gap: 0.3rem; align-items: baseline; min-width: 0; }
+.claim-doc-note { color: #64748b; font-style: italic; font-size: 0.75rem; }
+
+.report-filters {
+  display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: end;
+  margin: 0.5rem 0 0.2rem; padding: 0.6rem 0.8rem;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+}
+.report-filter { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: #475569; }
+.report-filter select { padding: 0.3rem 0.4rem; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 140px; }
+
+/* ── Documents register + claims dock, side by side ─────────────────── */
+.docs-claim-split { display: flex; gap: 1rem; align-items: flex-start; }
+.docs-claim-main { flex: 1; min-width: 0; }
+.claims-dock {
+  width: 340px; flex-shrink: 0;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  position: sticky; top: 1rem;
+  max-height: calc(100vh - 2rem); overflow: auto;
+}
+.doc-row-draggable { cursor: grab; }
+.doc-row-draggable:active { cursor: grabbing; }
+.doc-row-draggable:hover { background: #f1f5f9; }
+@media (max-width: 900px) {
+  .docs-claim-split { flex-direction: column; }
+  .claims-dock { width: auto; position: static; max-height: none; }
+}

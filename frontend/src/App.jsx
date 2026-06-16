@@ -11,6 +11,7 @@ import ContractForm from './components/ContractForm';
 import ClaimList from './components/ClaimList';
 import ClaimForm from './components/ClaimForm';
 import ClaimDetail from './components/ClaimDetail';
+import ClaimDropPanel from './components/ClaimDropPanel';
 import ContractMembers from './components/ContractMembers';
 import UserList from './components/UserList';
 import UserForm from './components/UserForm';
@@ -122,6 +123,8 @@ function Dashboard({ currentUser, onLogout }) {
   const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState(null);
   const [claimDetail, setClaimDetail] = useState(null);
+  const [claimMode, setClaimMode] = useState(false);
+  const [linkBusy, setLinkBusy] = useState(false);
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -185,6 +188,19 @@ function Dashboard({ currentUser, onLogout }) {
       try { await deleteContract(c.id); contracts.refresh(); setDeleteError(''); }
       catch (err) { setDeleteError(err.message); }
     }
+  };
+
+  const linkDocToClaim = async (docId, claimId) => {
+    setLinkBusy(true);
+    try { await updateDocument(docId, { claim_id: claimId }); docs.refresh(); claims.refresh(); }
+    catch (err) { setDeleteError(err.message); }
+    finally { setLinkBusy(false); }
+  };
+  const unlinkDoc = async (docId) => {
+    setLinkBusy(true);
+    try { await updateDocument(docId, { claim_id: null }); docs.refresh(); claims.refresh(); }
+    catch (err) { setDeleteError(err.message); }
+    finally { setLinkBusy(false); }
   };
 
   const handleSaveClaim = async (data) => {
@@ -262,7 +278,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -284,6 +300,14 @@ function Dashboard({ currentUser, onLogout }) {
                 value={activeModule.search}
                 onChange={(e) => activeModule.setSearch(e.target.value)}
               />
+              {tab === 'documents' && (
+                <button
+                  className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setClaimMode((v) => !v)}
+                >
+                  🔗 {claimMode ? 'Salir de Claims' : 'Vincular a Claims'}
+                </button>
+              )}
               {importConfig && (
                 <button className="btn btn-secondary" onClick={() => setShowImport(true)}>
                   📋 Pegar desde Excel
@@ -306,7 +330,27 @@ function Dashboard({ currentUser, onLogout }) {
             ) : (
               <>
                 {tab === 'documents' && (
-                  <DocumentList documents={docs.items} onEdit={openEdit} onDelete={handleDeleteDoc} />
+                  claimMode ? (
+                    <div className="docs-claim-split">
+                      <div className="docs-claim-main">
+                        <DocumentList
+                          documents={docs.items}
+                          onEdit={openEdit}
+                          onDelete={handleDeleteDoc}
+                          draggable
+                        />
+                      </div>
+                      <ClaimDropPanel
+                        documents={docs.items}
+                        claims={claims.items}
+                        onAssign={linkDocToClaim}
+                        onUnassign={unlinkDoc}
+                        busy={linkBusy}
+                      />
+                    </div>
+                  ) : (
+                    <DocumentList documents={docs.items} onEdit={openEdit} onDelete={handleDeleteDoc} />
+                  )
                 )}
                 {tab === 'claims' && (
                   <ClaimList
