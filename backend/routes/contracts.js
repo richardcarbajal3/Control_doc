@@ -13,16 +13,54 @@ function normalizeCurrency(v) {
   return v;
 }
 
-// El monto oficial se toma de la columna SIN IGV que corresponde a la moneda
-// del contrato (US$ → columna US$, S/ → columna S/). Solo se aplica si la fila
-// no trae ya un `amount` explícito.
-function deriveAmount(known, extra) {
-  if (known.amount != null && String(known.amount).trim() !== '') return;
-  const cur = normalizeCurrency(known.currency || '');
-  let src = null;
-  if (cur === 'USD') src = extra['MONTO CONTRATADO US$ (SIN IGV)'];
-  else if (cur === 'PEN') src = extra['MONTO CONTRATADO S/ (SIN IGV)'];
-  if (src != null && String(src).trim() !== '') known.amount = src;
+// ESTADO en el Excel es el estado de TODO el contrato (cerrado o no). Lo
+// llevamos al enum del modelo; cualquier valor no reconocido se conserva crudo.
+function normalizeContractStatus(v) {
+  const s = String(v).trim().toUpperCase();
+  if (/CERRAD|CLOSED/.test(s)) return 'Closed';
+  if (/RESCIND|RESUEL|TERMINAD/.test(s)) return 'Terminated';
+  if (/LIQUID|SETTLEMENT/.test(s)) return 'In Settlement';
+  if (/VIGENTE|ACTIV|ABIERT|EN EJEC|CURSO/.test(s)) return 'Active';
+  if (/BORRADOR|DRAFT/.test(s)) return 'Draft';
+  return v;
+}
+
+// Solo dígitos, para emparejar el RUC del Excel con companies.ruc de forma
+// tolerante a prefijos/espacios (p.ej. " P20452556201 ").
+const rucDigits = (v) => String(v == null ? '' : v).replace(/\D/g, '');
+
+// Carga única del batch: resolver RUC → company id para enlazar el contratista.
+async function resolveCompanies(rows, client) {
+  const wanted = new Set();
+  for (const r of rows) {
+    const ruc = r && r.extra_data && (r.extra_data.RUC ?? r.extra_data.ruc);
+    const d = rucDigits(ruc);
+    if (d) wanted.add(d);
+  }
+  const rucMap = new Map();
+  if (wanted.size === 0) return { rucMap };
+  const { rows: companies } = await client.query('SELECT id, ruc FROM companies');
+  for (const c of companies) {
+    const d = rucDigits(c.ruc);
+    if (d) rucMap.set(d, c.id);
+  }
+  return { rucMap };
+}
+
+function enrichRow(known, extra, ctx) {
+  // Monto oficial: columna SIN IGV de la moneda del contrato (US$ o S/).
+  if (known.amount == null || String(known.amount).trim() === '') {
+    const cur = normalizeCurrency(known.currency || '');
+    let src = null;
+    if (cur === 'USD') src = extra['MONTO CONTRATADO US$ (SIN IGV)'];
+    else if (cur === 'PEN') src = extra['MONTO CONTRATADO S/ (SIN IGV)'];
+    if (src != null && String(src).trim() !== '') known.amount = src;
+  }
+  // Contratista: por RUC (llave de empresa). Si no existe, queda en extra_data.
+  if (!known.contractor_id && ctx && ctx.rucMap) {
+    const id = ctx.rucMap.get(rucDigits(extra.RUC ?? extra.ruc));
+    if (id) known.contractor_id = id;
+  }
 }
 
 // Carga masiva por pegado desde Excel
@@ -33,8 +71,9 @@ router.post('/bulk', createBulkHandler({
   required: ['code', 'title'],
   numericColumns: ['amount', 'project_id', 'contractor_id', 'mandante_id'],
   dateColumns: ['start_date', 'end_date', 'actual_end_date'],
-  transforms: { currency: normalizeCurrency },
-  rowTransform: deriveAmount,
+  transforms: { currency: normalizeCurrency, status: normalizeContractStatus },
+  prepare: resolveCompanies,
+  rowTransform: enrichRow,
 }));
 
 router.get('/', async (req, res) => {
