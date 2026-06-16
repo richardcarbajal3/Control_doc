@@ -56,14 +56,17 @@ if (fs.existsSync(frontendDist)) {
   });
 }
 
-initDB()
-  .then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Servidor corriendo en puerto ${PORT}`);
-      console.log(`Frontend dist existe: ${fs.existsSync(indexHtml)}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Error al inicializar la base de datos:', err.message);
-    process.exit(1);
-  });
+// Start listening immediately so the platform healthcheck (/api/health) passes
+// right away. The DB init/migration runs in the BACKGROUND afterwards: this
+// avoids a deploy deadlock where the new container blocks on an ALTER waiting
+// for a lock held by the still-running old container. Schema changes are
+// additive/idempotent, and prod already has the tables, so serving before the
+// migration finishes is safe.
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log(`Frontend dist existe: ${fs.existsSync(indexHtml)}`);
+
+  initDB()
+    .then(() => console.log('Base de datos inicializada (background) OK'))
+    .catch((err) => console.error('Fallo al inicializar la base de datos (no bloquea el arranque):', err.message));
+});
