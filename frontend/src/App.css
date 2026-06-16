@@ -679,3 +679,21 @@ tr:hover {
 }
 .report-filter { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: #475569; }
 .report-filter select { padding: 0.3rem 0.4rem; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 140px; }
+
+/* ── Documents register + claims dock, side by side ─────────────────── */
+.docs-claim-split { display: flex; gap: 1rem; align-items: flex-start; }
+.docs-claim-main { flex: 1; min-width: 0; }
+.claims-dock {
+  width: 340px; flex-shrink: 0;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  position: sticky; top: 1rem;
+  max-height: calc(100vh - 2rem); overflow: auto;
+}
+.doc-row-draggable { cursor: grab; }
+.doc-row-draggable:active { cursor: grabbing; }
+.doc-row-draggable:hover { background: #f1f5f9; }
+@media (max-width: 900px) {
+  .docs-claim-split { flex-direction: column; }
+  .claims-dock { width: auto; position: static; max-height: none; }
+}

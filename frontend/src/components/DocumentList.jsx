@@ -13,7 +13,7 @@ function formatValue(field, value) {
   return String(value);
 }
 
-export default function DocumentList({ documents, onEdit, onDelete }) {
+export default function DocumentList({ documents, onEdit, onDelete, draggable = false }) {
   if (documents.length === 0) {
     return (
       <div className="empty-state">
@@ -21,6 +21,12 @@ export default function DocumentList({ documents, onEdit, onDelete }) {
       </div>
     );
   }
+
+  // When draggable, each row can be dropped onto a claim in the side panel.
+  const onRowDragStart = (e, doc) => {
+    e.dataTransfer.setData('text/plain', String(doc.id));
+    e.dataTransfer.effectAllowed = 'link';
+  };
 
   return (
     <div className="table-container">
@@ -35,7 +41,12 @@ export default function DocumentList({ documents, onEdit, onDelete }) {
         </thead>
         <tbody>
           {documents.map((doc) => (
-            <tr key={doc.id}>
+            <tr
+              key={doc.id}
+              className={draggable ? 'doc-row-draggable' : ''}
+              draggable={draggable || undefined}
+              onDragStart={draggable ? (e) => onRowDragStart(e, doc) : undefined}
+            >
               {FIELDS.map((f) => (
                 <td key={f.key} className={f.key === 'n_contrato' || f.key === 'documento_nro' ? 'code-cell' : ''}>
                   {formatValue(f, doc[f.key])}

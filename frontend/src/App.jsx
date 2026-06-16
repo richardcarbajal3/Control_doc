@@ -11,7 +11,7 @@ import ContractForm from './components/ContractForm';
 import ClaimList from './components/ClaimList';
 import ClaimForm from './components/ClaimForm';
 import ClaimDetail from './components/ClaimDetail';
-import ClaimLinkBoard from './components/ClaimLinkBoard';
+import ClaimDropPanel from './components/ClaimDropPanel';
 import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
@@ -223,13 +223,23 @@ export default function App() {
               <>
                 {tab === 'documents' && (
                   claimMode ? (
-                    <ClaimLinkBoard
-                      documents={docs.items}
-                      claims={claims.items}
-                      onAssign={linkDocToClaim}
-                      onUnassign={unlinkDoc}
-                      busy={linkBusy}
-                    />
+                    <div className="docs-claim-split">
+                      <div className="docs-claim-main">
+                        <DocumentList
+                          documents={docs.items}
+                          onEdit={openEdit}
+                          onDelete={handleDeleteDoc}
+                          draggable
+                        />
+                      </div>
+                      <ClaimDropPanel
+                        documents={docs.items}
+                        claims={claims.items}
+                        onAssign={linkDocToClaim}
+                        onUnassign={unlinkDoc}
+                        busy={linkBusy}
+                      />
+                    </div>
                   ) : (
                     <DocumentList documents={docs.items} onEdit={openEdit} onDelete={handleDeleteDoc} />
                   )
