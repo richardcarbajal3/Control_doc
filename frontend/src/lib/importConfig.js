@@ -5,8 +5,10 @@ export const IMPORT_CONFIGS = {
   documents: {
     label: 'Documentos',
     fields: [
-      { key: 'status', label: 'STATUS' },
-      { key: 'status_g', label: 'STATUS G' },
+      // STATUS y STATUS G son del TRANSMITTAL (no del documento): STATUS = sentido
+      // del envío (enviado/recibido); STATUS G = atención (atendido/pendiente).
+      { key: 'status', label: 'STATUS', options: ['ENVIADO', 'RECIBIDO'] },
+      { key: 'status_g', label: 'STATUS G', options: ['ATENDIDO', 'PENDIENTE'] },
       { key: 'n_contrato', label: 'N° CONTRATO' },
       { key: 'empresa', label: 'EMPRESA' },
       { key: 'contrato', label: 'CONTRATO' },
@@ -18,7 +20,9 @@ export const IMPORT_CONFIGS = {
       { key: 'rev', label: 'REV.' },
       { key: 'descripcion', label: 'DESCRIPCIÓN', type: 'textarea' },
       { key: 'tipo_doc', label: 'TIPO DE DOC' },
-      { key: 'status_contratista', label: 'STATUS DE CONTRATISTA' },
+      // STATUS DE CONTRATISTA es el estado del DOCUMENTO en sí (revisión técnica).
+      { key: 'status_contratista', label: 'STATUS DE CONTRATISTA',
+        options: ['APROBADO', 'EN REVISIÓN', 'CON OBSERVACIONES', 'ANULADO'] },
       { key: 'responsable', label: 'RESPONSABLE' },
     ],
   },
