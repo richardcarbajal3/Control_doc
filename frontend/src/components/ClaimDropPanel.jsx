@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CLAIM_STATUS_COLORS } from '../lib/claimOptions';
+import { CLAIM_STATUS_COLORS, CLAIM_TYPES } from '../lib/claimOptions';
 import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
 
 // Compact "Campo 1: x · Campo 2: y" summary of a document's claim_data.
@@ -16,12 +16,27 @@ const docLabel = (d) => d.documento_nro || d.descripcion || d.transmittal || `#$
 // Claims dock shown beside the documents register. Each claim is a drop target:
 // drag a table row here to link it (sets claim_id). A Cerrado claim rejects new
 // documents. Expand a claim to see/detach its documents.
-export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, busy }) {
+export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', busy }) {
   const [over, setOver] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [msg, setMsg] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [newClaim, setNewClaim] = useState({ title: '', type: 'Otro' });
+  const [saving, setSaving] = useState(false);
 
   const isClosed = (c) => String(c.status || '').trim().toUpperCase() === 'CERRADO';
+
+  const submitNewClaim = async (e) => {
+    e.preventDefault();
+    if (!newClaim.title.trim() || !onCreateClaim) return;
+    setSaving(true); setMsg('');
+    try {
+      await onCreateClaim({ title: newClaim.title.trim(), type: newClaim.type, n_contrato: defaultContract || null });
+      setNewClaim({ title: '', type: 'Otro' });
+      setCreating(false);
+    } catch (err) { setMsg(err.message); }
+    finally { setSaving(false); }
+  };
 
   const docsByClaim = useMemo(() => {
     const m = new Map();
@@ -53,7 +68,38 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
     <aside className="claims-dock">
       <div className="claim-board-head">
         <span className="section-title">Claims ({claims.length})</span>
+        {onCreateClaim && (
+          <button className="btn btn-small btn-primary" onClick={() => setCreating((v) => !v)}>
+            {creating ? '✕' : '+ Caso'}
+          </button>
+        )}
       </div>
+
+      {creating && (
+        <form className="claim-create" onSubmit={submitNewClaim}>
+          <input
+            className="note-input"
+            autoFocus
+            placeholder="Título del caso/claim…"
+            value={newClaim.title}
+            onChange={(e) => setNewClaim((s) => ({ ...s, title: e.target.value }))}
+          />
+          <select
+            className="note-input"
+            value={newClaim.type}
+            onChange={(e) => setNewClaim((s) => ({ ...s, type: e.target.value }))}
+          >
+            {CLAIM_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <div className="claim-create-meta">
+            Contrato: <strong>{defaultContract || '— (sin filtrar)'}</strong>
+          </div>
+          <button className="btn btn-small btn-primary" type="submit" disabled={saving || !newClaim.title.trim()}>
+            {saving ? 'Creando…' : 'Crear caso'}
+          </button>
+        </form>
+      )}
+
       <p className="import-help">Arrastra una fila de la tabla y suéltala sobre un claim.</p>
       {msg && <div className="form-error">{msg}</div>}
       <div className="drop-list">
