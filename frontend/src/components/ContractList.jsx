@@ -16,7 +16,7 @@ const TYPE_LABELS = {
 const fmt = (d) => d ? new Date(d).toLocaleDateString('es-PE') : '—';
 const fmtMonto = (m, currency) => m != null ? `${currency} ${Number(m).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '—';
 
-export default function ContractList({ contracts, onEdit, onDelete }) {
+export default function ContractList({ contracts, onEdit, onDelete, onManageRoles }) {
   if (contracts.length === 0) {
     return <div className="empty-state">No hay contratos registrados.</div>;
   }
@@ -54,6 +54,9 @@ export default function ContractList({ contracts, onEdit, onDelete }) {
                 <td>{fmt(c.end_date)}</td>
                 <td><span className={`badge ${status.cls}`}>{status.label}</span></td>
                 <td className="actions">
+                  {onManageRoles && (
+                    <button className="btn btn-small btn-secondary" onClick={() => onManageRoles(c)}>Roles</button>
+                  )}
                   <button className="btn btn-small btn-edit" onClick={() => onEdit(c)}>Editar</button>
                   <button className="btn btn-small btn-delete" onClick={() => onDelete(c)}>Eliminar</button>
                 </td>

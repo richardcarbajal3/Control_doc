@@ -136,3 +136,83 @@ ALTER TABLE claims    ADD COLUMN IF NOT EXISTS extra_data JSONB NOT NULL DEFAULT
 ALTER TABLE claims    ADD COLUMN IF NOT EXISTS type VARCHAR(50) NOT NULL DEFAULT 'Otro';
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS claim_id INTEGER REFERENCES claims(id) ON DELETE SET NULL;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES documents(id) ON DELETE SET NULL;
+
+-- =========================================================================
+-- Authentication & access control (see docs T-12/T-13/T-15)
+-- Users sign in with an email + password. The app owner (superadmin) sells
+-- subscriptions: each client is an organization, and the superadmin assigns a
+-- user as that organization's admin. The org admin then authorizes other
+-- emails into the organization (regardless of their domain).
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS organizations (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'active',
+  plan VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  full_name VARCHAR(255),
+  password_hash VARCHAR(255),
+  role VARCHAR(30) NOT NULL DEFAULT 'member',
+  organization_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL,
+  company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Per-contract role assignment (loaded by an admin, often via Excel paste).
+CREATE TABLE IF NOT EXISTS contract_members (
+  id SERIAL PRIMARY KEY,
+  contract_id INTEGER NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role VARCHAR(40) NOT NULL DEFAULT 'lector',
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (contract_id, user_id)
+);
+
+-- Corporate domains allowed to register/login (e.g. shouxin.com.pe).
+CREATE TABLE IF NOT EXISTS allowed_domains (
+  id SERIAL PRIMARY KEY,
+  domain VARCHAR(255) NOT NULL UNIQUE,
+  company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Self-healing (idempotent) for existing databases.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL;
+
+-- =========================================================================
+-- Multi-tenant data isolation (Fase 3): every data table is scoped to an
+-- organization. Added via self-healing ALTERs (organizations already exists
+-- above). ON DELETE CASCADE so removing a client removes its data.
+-- =========================================================================
+ALTER TABLE companies  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE projects   ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE contracts  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE claims     ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE documents  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+
+-- Uniqueness becomes per-tenant: two organizations may reuse the same RUC or
+-- contract/project code. NULL organization_id (legacy/owner data) stays distinct.
+ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_ruc_key;
+ALTER TABLE projects  DROP CONSTRAINT IF EXISTS projects_code_key;
+ALTER TABLE contracts DROP CONSTRAINT IF EXISTS contracts_code_key;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'companies_org_ruc_key') THEN
+    ALTER TABLE companies ADD CONSTRAINT companies_org_ruc_key UNIQUE (organization_id, ruc);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'projects_org_code_key') THEN
+    ALTER TABLE projects ADD CONSTRAINT projects_org_code_key UNIQUE (organization_id, code);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'contracts_org_code_key') THEN
+    ALTER TABLE contracts ADD CONSTRAINT contracts_org_code_key UNIQUE (organization_id, code);
+  END IF;
+END $$;

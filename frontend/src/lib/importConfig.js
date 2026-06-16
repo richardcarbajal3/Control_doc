@@ -52,6 +52,15 @@ export const IMPORT_CONFIGS = {
       { key: 'estado', label: 'Estado' },
     ],
   },
+  users: {
+    label: 'Usuarios',
+    fields: [
+      { key: 'email', label: 'Correo', required: true },
+      { key: 'full_name', label: 'Nombre' },
+      { key: 'role', label: 'Rol (member/admin)' },
+      { key: 'password', label: 'Contraseña' },
+    ],
+  },
   claims: {
     label: 'Claims',
     fields: [

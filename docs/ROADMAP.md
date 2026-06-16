@@ -114,9 +114,12 @@ SaaS de gestión contractual y documental para empresas del sector minería y co
 
 ### 3.1 — Multitenancy Real
 
-- [ ] Aislamiento de datos por organización (tenant)
-- [ ] Plan de suscripción: usuarios, proyectos y almacenamiento por tier
-- [ ] Invitación de usuarios por email con roles personalizables
+- [x] Modelo de organizaciones (clientes/tenants); el dueño (superadmin) crea clientes y asigna su admin.
+- [x] Registro abierto: cualquiera se registra; sin organización no accede a datos.
+- [x] El admin de cliente autoriza usuarios a su organización (sin importar el dominio).
+- [x] Aislamiento de datos por organización (documentos, claims, contratos, proyectos, empresas filtrados por `organization_id`; unicidad por tenant; cross-tenant bloqueado).
+- [ ] Plan de suscripción: usuarios, proyectos y almacenamiento por tier (la tabla `organizations` ya tiene `plan`/`status`, falta el enforcement de límites y el cobro).
+- [ ] Invitación de usuarios por email con roles personalizables (hoy se autoriza por correo; falta el email de invitación).
 
 ### 3.2 — Integraciones
 

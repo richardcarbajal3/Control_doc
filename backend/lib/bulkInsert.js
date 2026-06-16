@@ -100,6 +100,11 @@ function createBulkHandler({
         const placeholders = [];
         const values = [];
         let p = 1;
+        // Stamp the actor's organization so pasted rows belong to their tenant.
+        const orgId = req.user && req.user.role !== 'superadmin' ? req.user.organization_id : null;
+        cols.push('organization_id');
+        placeholders.push(`$${p++}`);
+        values.push(orgId);
         for (const c of columns) {
           if (!(c in known)) continue;
           let v = known[c];

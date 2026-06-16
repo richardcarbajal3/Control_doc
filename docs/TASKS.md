@@ -209,6 +209,15 @@ Cada tarea es atómica, estimable y asignable a un desarrollador.
 - Regla: *pendiente* = `STATUS G` ≠ `ATENDIDO`; *días de atraso* = hoy − (`FECHA` + 3 días) mientras siga pendiente (SLA 3 días).
 - Frontend: pestaña Presentación con KPIs, pendientes por responsable, pendientes por días de atraso y exportación CSV.
 
+### T-12/T-15/T-31 · Autenticación y roles · **Hecho (Fase 1)**
+- Login con **correo corporativo + contraseña** (JWT HS256, sin dependencias externas: `crypto` nativo). Dominios permitidos configurables (`AUTH_ALLOWED_DOMAINS`); rechaza correos fuera de dominio.
+- Superadmin sembrado al arrancar (`SUPERADMIN_EMAIL`/`SUPERADMIN_PASSWORD`).
+- Roles de cuenta: **superadmin / admin / member**. Admin administra usuarios (alta individual y por **Excel**).
+- **Roles por contrato** (`contract_members`): control_documentario / colaborador / lector, asignables por el admin individualmente o por **Excel (correo + rol)**.
+- Todas las rutas de datos quedan detrás de `requireAuth`; gestión de usuarios y de miembros sólo admin/superadmin.
+- Frontend: pantalla de Login, sesión persistente, pestaña Usuarios y modal "Roles" por contrato.
+- **Pendiente (Fase 2):** aplicar el permiso por contrato a nivel de *documento* (control_documentario carga todo; colaborador sólo sus expedientes; lector sólo lectura). Hoy el control fino aún no filtra registro por registro.
+
 ---
 
 ## Orden de ejecución sugerido
@@ -265,3 +274,9 @@ T-12 → T-13 → T-15 → T-14
 | T-28 | Alertas por email | Baja | Pendiente |
 | T-29 | Módulo Claims + enlace de documentos | Alta | Hecho |
 | T-30 | Dashboard de presentación (pendientes/atrasos) | Alta | Hecho |
+| T-32 | SaaS multi-cliente: organizaciones + registro + asignación | Alta | Hecho |
+| T-33 | Aislamiento de datos por organización (multitenancy) | Alta | Hecho |
+| T-12 | Autenticación JWT (correo corporativo + contraseña) | Alta | Hecho |
+| T-13 | Roles: superadmin/admin/member + roles por contrato | Alta | Parcial |
+| T-15 | Pantalla Login | Alta | Hecho |
+| T-31 | Roles por contrato + carga Excel (email+rol) | Alta | Hecho |

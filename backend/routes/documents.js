@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { pool } = require('../db');
 const { createBulkHandler } = require('../lib/bulkInsert');
+const { actorOrgId, orgCond } = require('../lib/scope');
 
 const router = Router();
 
@@ -51,16 +52,19 @@ router.post('/bulk', createBulkHandler({
 router.get('/', async (req, res) => {
   try {
     const { search } = req.query;
-    let query = `SELECT *, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso FROM documents`;
     const params = [];
-
+    const conds = [];
+    const oc = orgCond(req, params);
+    if (oc) conds.push(oc);
     if (search) {
-      query += ` WHERE documento_nro ILIKE $1 OR descripcion ILIKE $1
-                 OR n_contrato ILIKE $1 OR empresa ILIKE $1 OR transmittal ILIKE $1`;
       params.push(`%${search}%`);
+      const s = params.length;
+      conds.push(`(documento_nro ILIKE $${s} OR descripcion ILIKE $${s}
+                 OR n_contrato ILIKE $${s} OR empresa ILIKE $${s} OR transmittal ILIKE $${s})`);
     }
-
-    query += ' ORDER BY updated_at DESC';
+    const query = `SELECT *, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso FROM documents`
+      + (conds.length ? ' WHERE ' + conds.join(' AND ') : '')
+      + ' ORDER BY updated_at DESC';
     const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -71,7 +75,11 @@ router.get('/', async (req, res) => {
 // Obtener documento por ID
 router.get('/:id', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM documents WHERE id = $1', [req.params.id]);
+    const params = [req.params.id];
+    let q = 'SELECT * FROM documents WHERE id = $1';
+    const oc = orgCond(req, params);
+    if (oc) q += ` AND ${oc}`;
+    const { rows } = await pool.query(q, params);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
@@ -121,9 +129,11 @@ router.post('/', async (req, res) => {
   try {
     await assertClaimAcceptsDocs(req.body);
     const { cols, placeholders, values } = buildFields(req.body);
-    const sql = cols.length
-      ? `INSERT INTO documents (${cols.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`
-      : 'INSERT INTO documents DEFAULT VALUES RETURNING *';
+    // Stamp the document with the actor's organization (tenant isolation).
+    cols.push('organization_id');
+    placeholders.push(`$${values.length + 1}`);
+    values.push(actorOrgId(req));
+    const sql = `INSERT INTO documents (${cols.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
     const { rows } = await pool.query(sql, values);
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -138,10 +148,12 @@ router.put('/:id', async (req, res) => {
     const { cols, values, nextParam } = buildFields(req.body);
     if (cols.length === 0) return res.status(400).json({ error: 'No hay campos para actualizar' });
     const setClause = cols.map((c, i) => `${c} = $${i + 1}`).join(', ');
-    const { rows } = await pool.query(
-      `UPDATE documents SET ${setClause}, updated_at = NOW() WHERE id = $${nextParam} RETURNING *`,
-      [...values, req.params.id]
-    );
+    const params = [...values, req.params.id];
+    let q = `UPDATE documents SET ${setClause}, updated_at = NOW() WHERE id = $${nextParam}`;
+    const oc = orgCond(req, params);
+    if (oc) q += ` AND ${oc}`;
+    q += ' RETURNING *';
+    const { rows } = await pool.query(q, params);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
@@ -154,10 +166,12 @@ router.put('/:id', async (req, res) => {
 // Eliminar documento
 router.delete('/:id', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      'DELETE FROM documents WHERE id = $1 RETURNING *',
-      [req.params.id]
-    );
+    const params = [req.params.id];
+    let q = 'DELETE FROM documents WHERE id = $1';
+    const oc = orgCond(req, params);
+    if (oc) q += ` AND ${oc}`;
+    q += ' RETURNING *';
+    const { rows } = await pool.query(q, params);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
