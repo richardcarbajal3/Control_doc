@@ -449,7 +449,7 @@ function Dashboard({ currentUser, onLogout }) {
                           onEdit={openEdit}
                           onDelete={handleDeleteDoc}
                           draggable
-                          highlightClaimId={claimView === 'highlight' ? selectedClaimId : null}
+                          highlightClaimId={selectedClaimId}
                         />
                       </div>
                       <ClaimDropPanel
