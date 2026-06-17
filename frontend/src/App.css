@@ -782,3 +782,35 @@ tr:hover {
 .doc-filters .report-filter select[multiple] {
   width: 100%; min-width: 0; height: 88px;
 }
+
+/* ── Claims dock as a fixed floating panel (always visible when active) ── */
+.app.claim-active .header,
+.app.claim-active .tabs { padding-right: 360px; }
+.app.claim-active .main { padding-right: 372px; }
+.app.claim-active .toolbar-sticky { z-index: 20; }
+
+.app.claim-active .claims-dock {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 344px;
+  max-height: none;
+  border: none;
+  border-left: 1px solid #e2e8f0;
+  border-radius: 0;
+  z-index: 40;
+  overflow: auto;
+  box-shadow: -6px 0 14px -8px rgba(0,0,0,0.25);
+}
+.app.claim-active .docs-claim-split { display: block; }
+
+@media (max-width: 900px) {
+  .app.claim-active .header,
+  .app.claim-active .tabs,
+  .app.claim-active .main { padding-right: 2rem; }
+  .app.claim-active .claims-dock {
+    position: static; width: auto; border-left: none;
+    border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: none;
+  }
+}

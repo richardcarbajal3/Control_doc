@@ -297,7 +297,7 @@ function Dashboard({ currentUser, onLogout }) {
   };
 
   return (
-    <div className="app">
+    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''}`}>
       <header className={`header ${headerCollapsed ? 'header-collapsed' : ''}`}>
         <div className="header-title">
           <button
