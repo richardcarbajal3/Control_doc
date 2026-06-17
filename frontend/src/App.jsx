@@ -129,6 +129,7 @@ function Dashboard({ currentUser, onLogout }) {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedClaimId, setSelectedClaimId] = useState(null);
+  const [claimView, setClaimView] = useState('highlight'); // highlight | related | unrelated
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -292,6 +293,16 @@ function Dashboard({ currentUser, onLogout }) {
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
+  // Claim-mode view: count related/unrelated among the currently visible docs,
+  // and pick which subset the table shows depending on the chosen mode.
+  const relatedCount = useMemo(() => visibleDocs.filter((d) => d.claim_id != null).length, [visibleDocs]);
+  const unrelatedCount = visibleDocs.length - relatedCount;
+  const claimViewDocs = useMemo(() => {
+    if (claimView === 'related') return visibleDocs.filter((d) => d.claim_id != null);
+    if (claimView === 'unrelated') return visibleDocs.filter((d) => d.claim_id == null);
+    return visibleDocs;
+  }, [visibleDocs, claimView]);
+
   // Create a claim inline from the side panel (no need to leave Documents).
   const handleCreateClaimInline = async (data) => {
     const created = await createClaim(data);
@@ -327,7 +338,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setSelectedClaimId(null); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setSelectedClaimId(null); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -391,7 +402,7 @@ function Dashboard({ currentUser, onLogout }) {
               {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimId(null); }}
+                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimId(null); setClaimView('highlight'); }}
                 >
                   🔗 {claimMode ? 'Salir de Claims' : 'Vincular a Claims'}
                 </button>
@@ -423,11 +434,11 @@ function Dashboard({ currentUser, onLogout }) {
                     <div className="docs-claim-split">
                       <div className="docs-claim-main">
                         <DocumentList
-                          documents={visibleDocs}
+                          documents={claimViewDocs}
                           onEdit={openEdit}
                           onDelete={handleDeleteDoc}
                           draggable
-                          highlightClaimId={selectedClaimId}
+                          highlightClaimId={claimView === 'highlight' ? selectedClaimId : null}
                         />
                       </div>
                       <ClaimDropPanel
@@ -439,6 +450,10 @@ function Dashboard({ currentUser, onLogout }) {
                         defaultContract={docFilters.n_contrato?.length === 1 ? docFilters.n_contrato[0] : ''}
                         selectedClaimId={selectedClaimId}
                         onSelectClaim={(id) => setSelectedClaimId((prev) => (prev === id ? null : id))}
+                        viewMode={claimView}
+                        onViewMode={setClaimView}
+                        relatedCount={relatedCount}
+                        unrelatedCount={unrelatedCount}
                         busy={linkBusy}
                       />
                     </div>

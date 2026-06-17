@@ -16,7 +16,7 @@ const docLabel = (d) => d.documento_nro || d.descripcion || d.transmittal || `#$
 // Claims dock shown beside the documents register. Each claim is a drop target:
 // drag a table row here to link it (sets claim_id). A Cerrado claim rejects new
 // documents. Expand a claim to see/detach its documents.
-export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimId = null, onSelectClaim, busy }) {
+export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimId = null, onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy }) {
   const [over, setOver] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [msg, setMsg] = useState('');
@@ -100,7 +100,37 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
         </form>
       )}
 
-      <p className="import-help">Arrastra una fila sobre un claim para vincular. Haz clic en un claim para resaltar sus documentos en la tabla.</p>
+      {onViewMode && (
+        <div className="claim-view-modes">
+          <button
+            className={viewMode === 'highlight' ? 'active' : ''}
+            onClick={() => onViewMode('highlight')}
+            title="Mostrar todos; al hacer clic en un claim, resalta sus documentos"
+          >
+            Resaltar
+          </button>
+          <button
+            className={viewMode === 'related' ? 'active' : ''}
+            onClick={() => onViewMode('related')}
+            title="Mostrar solo documentos ya vinculados a un claim"
+          >
+            Relacionados ({relatedCount})
+          </button>
+          <button
+            className={viewMode === 'unrelated' ? 'active' : ''}
+            onClick={() => onViewMode('unrelated')}
+            title="Mostrar solo documentos sin claim"
+          >
+            No relacionados ({unrelatedCount})
+          </button>
+        </div>
+      )}
+
+      <p className="import-help">
+        {viewMode === 'related' && 'Mostrando solo documentos relacionados a un claim.'}
+        {viewMode === 'unrelated' && 'Mostrando solo documentos sin claim — revisa si alguno debe vincularse.'}
+        {viewMode === 'highlight' && 'Arrastra una fila sobre un claim para vincular. Haz clic en un claim para resaltar sus documentos.'}
+      </p>
       {msg && <div className="form-error">{msg}</div>}
       <div className="drop-list">
         {claims.length === 0 && <div className="empty-state"><p>Sin claims</p></div>}
