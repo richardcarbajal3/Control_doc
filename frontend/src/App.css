@@ -843,3 +843,26 @@ tr:hover {
   border-color: #f59e0b;
   box-shadow: 0 0 0 2px #f59e0b55;
 }
+
+/* ── Claim view modes (highlight / related / unrelated) ─────────────── */
+.claim-view-modes {
+  display: flex;
+  gap: 0;
+  margin: 0.5rem 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.claim-view-modes button {
+  flex: 1;
+  border: none;
+  background: #fff;
+  color: #475569;
+  font-size: 0.74rem;
+  padding: 0.4rem 0.3rem;
+  cursor: pointer;
+  border-right: 1px solid #e2e8f0;
+}
+.claim-view-modes button:last-child { border-right: none; }
+.claim-view-modes button:hover { background: #f1f5f9; }
+.claim-view-modes button.active { background: #1e3a5f; color: #fff; font-weight: 600; }
