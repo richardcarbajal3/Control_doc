@@ -13,7 +13,7 @@ function formatValue(field, value) {
   return String(value);
 }
 
-export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [] }) {
+export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick }) {
   if (documents.length === 0) {
     return (
       <div className="empty-state">
@@ -45,10 +45,12 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
               key={doc.id}
               className={[
                 draggable ? 'doc-row-draggable' : '',
+                onRowClick ? 'doc-row-clickable' : '',
                 doc.claim_id != null && highlightClaimIds.includes(doc.claim_id) ? 'doc-row-highlight' : '',
               ].filter(Boolean).join(' ')}
               draggable={draggable || undefined}
               onDragStart={draggable ? (e) => onRowDragStart(e, doc) : undefined}
+              onClick={onRowClick ? () => onRowClick(doc) : undefined}
             >
               {FIELDS.map((f) => {
                 const text = formatValue(f, doc[f.key]);
@@ -63,10 +65,10 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
                 );
               })}
               <td className="actions-cell">
-                <button className="btn btn-small btn-edit" onClick={() => onEdit(doc)}>
+                <button className="btn btn-small btn-edit" onClick={(e) => { e.stopPropagation(); onEdit(doc); }}>
                   Editar
                 </button>
-                <button className="btn btn-small btn-delete" onClick={() => onDelete(doc)}>
+                <button className="btn btn-small btn-delete" onClick={(e) => { e.stopPropagation(); onDelete(doc); }}>
                   Eliminar
                 </button>
               </td>

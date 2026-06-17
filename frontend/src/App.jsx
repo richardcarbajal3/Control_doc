@@ -12,6 +12,7 @@ import ClaimList from './components/ClaimList';
 import ClaimForm from './components/ClaimForm';
 import ClaimDetail from './components/ClaimDetail';
 import ClaimDropPanel from './components/ClaimDropPanel';
+import DocumentDetail from './components/DocumentDetail';
 import ContractMembers from './components/ContractMembers';
 import UserList from './components/UserList';
 import UserForm from './components/UserForm';
@@ -140,6 +141,7 @@ function Dashboard({ currentUser, onLogout }) {
     return () => document.removeEventListener('mousedown', onDown);
   }, [showFilters]);
   const [selectedClaimIds, setSelectedClaimIds] = useState([]);
+  const [docDetail, setDocDetail] = useState(null);
   const [claimView, setClaimView] = useState('highlight'); // highlight | related | unrelated
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
@@ -353,7 +355,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -454,6 +456,7 @@ function Dashboard({ currentUser, onLogout }) {
                           onDelete={handleDeleteDoc}
                           draggable
                           highlightClaimIds={claimView === 'highlight' ? selectedClaimIds : []}
+                          onRowClick={setDocDetail}
                         />
                       </div>
                       <ClaimDropPanel
@@ -473,7 +476,7 @@ function Dashboard({ currentUser, onLogout }) {
                       />
                     </div>
                   ) : (
-                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} />
+                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} onRowClick={setDocDetail} />
                   )
                 )}
                 {tab === 'claims' && (
@@ -582,6 +585,15 @@ function Dashboard({ currentUser, onLogout }) {
           allDocuments={docs.items}
           onClose={() => setClaimDetail(null)}
           onChanged={() => { claims.refresh(); docs.refresh(); }}
+        />
+      )}
+
+      {docDetail && (
+        <DocumentDetail
+          doc={docDetail}
+          allDocuments={docs.items}
+          claims={claims.items}
+          onClose={() => setDocDetail(null)}
         />
       )}
 
