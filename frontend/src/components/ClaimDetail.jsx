@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getClaim } from '../api/claims';
+import { getClaim, updateClaim } from '../api/claims';
 import { updateDocument } from '../api/documents';
 import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
 
@@ -42,6 +42,27 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
     setBusy(true); setError('');
     try { await updateDocument(id, { claim_id: null }); await load(); onChanged?.(); }
     catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  };
+
+  // Close / reopen the claim. A closed claim won't accept more documents.
+  const toggleClosed = async () => {
+    const src = data || claim;
+    const nextStatus = isClosed ? 'Abierto' : 'Cerrado';
+    if (!isClosed && !window.confirm('¿Cerrar este claim? No se podrán agregar más documentos hasta reabrirlo.')) return;
+    setBusy(true); setError('');
+    try {
+      await updateClaim(claim.id, {
+        code: src.code,
+        title: src.title,
+        type: src.type,
+        n_contrato: src.n_contrato,
+        status: nextStatus,
+        description: src.description,
+      });
+      await load();
+      onChanged?.();
+    } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
 
@@ -140,7 +161,14 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
         )}
 
         <div className="form-actions">
-          <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>
+          <button
+            className={`btn ${isClosed ? 'btn-secondary' : 'btn-primary'}`}
+            disabled={busy}
+            onClick={toggleClosed}
+          >
+            {isClosed ? 'Reabrir claim' : 'Cerrar claim'}
+          </button>
+          <button className="btn btn-secondary" onClick={onClose}>Salir</button>
         </div>
       </div>
     </div>
