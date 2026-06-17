@@ -831,3 +831,15 @@ tr:hover {
 }
 .filters-popover-head { display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end; margin-bottom: 0.5rem; }
 .filters-popover .doc-filters { margin-bottom: 0; padding: 0; background: none; border: none; }
+
+/* ── Highlight a claim's documents when its card is selected ─────────── */
+.doc-table tr.doc-row-highlight td {
+  background: #fef3c7;
+}
+.doc-table tr.doc-row-highlight td:first-child {
+  box-shadow: inset 4px 0 0 #f59e0b;
+}
+.claim-drop-card.claim-selected {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px #f59e0b55;
+}

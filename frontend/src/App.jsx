@@ -128,6 +128,7 @@ function Dashboard({ currentUser, onLogout }) {
   const [docFilters, setDocFilters] = useState({});
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedClaimId, setSelectedClaimId] = useState(null);
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -326,7 +327,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setSelectedClaimId(null); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -390,7 +391,7 @@ function Dashboard({ currentUser, onLogout }) {
               {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setClaimMode((v) => !v)}
+                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimId(null); }}
                 >
                   🔗 {claimMode ? 'Salir de Claims' : 'Vincular a Claims'}
                 </button>
@@ -426,6 +427,7 @@ function Dashboard({ currentUser, onLogout }) {
                           onEdit={openEdit}
                           onDelete={handleDeleteDoc}
                           draggable
+                          highlightClaimId={selectedClaimId}
                         />
                       </div>
                       <ClaimDropPanel
@@ -435,6 +437,8 @@ function Dashboard({ currentUser, onLogout }) {
                         onUnassign={unlinkDoc}
                         onCreateClaim={handleCreateClaimInline}
                         defaultContract={docFilters.n_contrato?.length === 1 ? docFilters.n_contrato[0] : ''}
+                        selectedClaimId={selectedClaimId}
+                        onSelectClaim={(id) => setSelectedClaimId((prev) => (prev === id ? null : id))}
                         busy={linkBusy}
                       />
                     </div>
