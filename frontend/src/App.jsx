@@ -126,6 +126,7 @@ function Dashboard({ currentUser, onLogout }) {
   const [claimMode, setClaimMode] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -297,10 +298,19 @@ function Dashboard({ currentUser, onLogout }) {
 
   return (
     <div className="app">
-      <header className="header">
-        <div>
-          <h1>Control Doc</h1>
-          <p>Sistema de gestión contractual y documental</p>
+      <header className={`header ${headerCollapsed ? 'header-collapsed' : ''}`}>
+        <div className="header-title">
+          <button
+            className="header-toggle"
+            onClick={() => setHeaderCollapsed((v) => !v)}
+            title={headerCollapsed ? 'Expandir encabezado' : 'Colapsar encabezado'}
+          >
+            {headerCollapsed ? '▾' : '▴'}
+          </button>
+          <div>
+            <h1>Control Doc</h1>
+            <p>Sistema de gestión contractual y documental</p>
+          </div>
         </div>
         <div className="user-box">
           <span className="user-email">{currentUser.email}</span>
@@ -328,6 +338,7 @@ function Dashboard({ currentUser, onLogout }) {
           <ReportView />
         ) : (
           <>
+            <div className="toolbar-sticky">
             <div className="toolbar">
               <input
                 type="text"
@@ -377,6 +388,7 @@ function Dashboard({ currentUser, onLogout }) {
                 )}
               </div>
             )}
+            </div>
 
             {deleteError && (
               <div className="alert-error">
