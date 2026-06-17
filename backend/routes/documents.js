@@ -64,7 +64,7 @@ router.get('/', async (req, res) => {
     }
     const query = `SELECT *, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso FROM documents`
       + (conds.length ? ' WHERE ' + conds.join(' AND ') : '')
-      + ' ORDER BY updated_at DESC';
+      + ' ORDER BY fecha ASC NULLS LAST, transmittal ASC NULLS LAST, id ASC';
     const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {

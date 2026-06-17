@@ -726,3 +726,24 @@ tr:hover {
   background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
 }
 .claim-create-meta { font-size: 0.75rem; color: #64748b; }
+
+/* ── Compact documents table (no wrap) + multi-select filters ────────── */
+.doc-table th, .doc-table td {
+  white-space: nowrap;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  vertical-align: middle;
+}
+.doc-table .cell-truncate {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.doc-filters { align-items: flex-start; }
+.doc-filters-hint { font-size: 0.75rem; color: #475569; align-self: center; }
+.doc-filters .report-filter select[multiple] {
+  min-width: 150px;
+  padding: 0.2rem;
+  font-size: 0.8rem;
+}
+.doc-filters .report-filter select[multiple] option { padding: 0.1rem 0.3rem; }
