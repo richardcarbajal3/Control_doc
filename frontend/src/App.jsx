@@ -125,7 +125,7 @@ function Dashboard({ currentUser, onLogout }) {
   const [claimDetail, setClaimDetail] = useState(null);
   const [claimMode, setClaimMode] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
-  const [contractFilter, setContractFilter] = useState('');
+  const [docFilters, setDocFilters] = useState({});
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -260,17 +260,30 @@ function Dashboard({ currentUser, onLogout }) {
 
   const handleImported = () => { activeModule?.refresh(); };
 
-  // Contract filter for the Documents tab: distinct N° contrato values present,
-  // so the contract admin can narrow to the contract they're working on before
-  // dragging documents into claims.
-  const docContracts = useMemo(
-    () => [...new Set(docs.items.map((d) => d.n_contrato).filter(Boolean))]
-      .sort((a, b) => String(a).localeCompare(String(b), 'es')),
-    [docs.items]
-  );
-  const visibleDocs = contractFilter
-    ? docs.items.filter((d) => d.n_contrato === contractFilter)
-    : docs.items;
+  // Quick filters for the Documents tab. Each is a dropdown built from the
+  // distinct values present, so the user can narrow the register fast.
+  const DOC_FILTER_FIELDS = [
+    { key: 'n_contrato', label: 'Contrato' },
+    { key: 'status', label: 'STATUS' },
+    { key: 'status_g', label: 'STATUS G' },
+    { key: 'empresa', label: 'EMPRESA' },
+    { key: 'transmittal', label: '# TRANSMITTAL' },
+    { key: 'responsable', label: 'RESPONSABLE' },
+  ];
+  const docFilterOptions = useMemo(() => {
+    const opts = {};
+    for (const f of DOC_FILTER_FIELDS) {
+      opts[f.key] = [...new Set(docs.items.map((d) => d[f.key]).filter((v) => v != null && v !== ''))]
+        .sort((a, b) => String(a).localeCompare(String(b), 'es'));
+    }
+    return opts;
+  }, [docs.items]);
+  const visibleDocs = useMemo(() => {
+    const active = Object.entries(docFilters).filter(([, v]) => v);
+    return active.length
+      ? docs.items.filter((d) => active.every(([k, v]) => String(d[k] ?? '') === v))
+      : docs.items;
+  }, [docs.items, docFilters]);
 
   // Create a claim inline from the side panel (no need to leave Documents).
   const handleCreateClaimInline = async (data) => {
@@ -298,7 +311,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setContractFilter(''); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setDocFilters({}); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -321,17 +334,6 @@ function Dashboard({ currentUser, onLogout }) {
                 onChange={(e) => activeModule.setSearch(e.target.value)}
               />
               {tab === 'documents' && (
-                <select
-                  className="search-input contract-filter"
-                  value={contractFilter}
-                  onChange={(e) => setContractFilter(e.target.value)}
-                  title="Filtrar por contrato"
-                >
-                  <option value="">Todos los contratos ({docContracts.length})</option>
-                  {docContracts.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              )}
-              {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setClaimMode((v) => !v)}
@@ -348,6 +350,26 @@ function Dashboard({ currentUser, onLogout }) {
                 + Nuevo {cfg.label}
               </button>
             </div>
+
+            {tab === 'documents' && (
+              <div className="report-filters doc-filters">
+                {DOC_FILTER_FIELDS.map((f) => (
+                  <label key={f.key} className="report-filter">
+                    <span>{f.label}</span>
+                    <select
+                      value={docFilters[f.key] || ''}
+                      onChange={(e) => setDocFilters((s) => ({ ...s, [f.key]: e.target.value }))}
+                    >
+                      <option value="">Todos</option>
+                      {docFilterOptions[f.key].map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </label>
+                ))}
+                {Object.values(docFilters).some(Boolean) && (
+                  <button className="chip" onClick={() => setDocFilters({})}>Limpiar filtros</button>
+                )}
+              </div>
+            )}
 
             {deleteError && (
               <div className="alert-error">
@@ -377,7 +399,7 @@ function Dashboard({ currentUser, onLogout }) {
                         onAssign={linkDocToClaim}
                         onUnassign={unlinkDoc}
                         onCreateClaim={handleCreateClaimInline}
-                        defaultContract={contractFilter}
+                        defaultContract={docFilters.n_contrato || ''}
                         busy={linkBusy}
                       />
                     </div>
