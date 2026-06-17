@@ -747,3 +747,38 @@ tr:hover {
   font-size: 0.8rem;
 }
 .doc-filters .report-filter select[multiple] option { padding: 0.1rem 0.3rem; }
+
+/* ── Collapsible header + sticky toolbar/filters + uniform filters ───── */
+.header-title { display: flex; align-items: center; gap: 0.75rem; }
+.header-toggle {
+  background: transparent; border: 1px solid rgba(255,255,255,0.45); color: #fff;
+  width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.header-toggle:hover { background: rgba(255,255,255,0.12); }
+.header.header-collapsed { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.header.header-collapsed p { display: none; }
+.header.header-collapsed h1 { font-size: 1.15rem; }
+
+/* Toolbar + filters stay fixed while the list scrolls. */
+.toolbar-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #f3f4f6;
+  padding-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 4px 6px -4px rgba(0,0,0,0.18);
+}
+.toolbar-sticky .toolbar { margin-bottom: 0.75rem; }
+.toolbar-sticky .report-filters { margin-bottom: 0.5rem; }
+
+/* Uniform filter boxes. */
+.doc-filters .report-filter { width: 156px; }
+.doc-filters .report-filter > span {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 600;
+}
+.doc-filters .report-filter select[multiple] {
+  width: 100%; min-width: 0; height: 88px;
+}
