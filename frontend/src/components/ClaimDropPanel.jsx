@@ -105,9 +105,9 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
           <button
             className={viewMode === 'highlight' ? 'active' : ''}
             onClick={() => onViewMode('highlight')}
-            title="Mostrar todos; al hacer clic en un claim, resalta sus documentos"
+            title="Mostrar todos los documentos"
           >
-            Resaltar
+            Todos
           </button>
           <button
             className={viewMode === 'related' ? 'active' : ''}
@@ -127,9 +127,9 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
       )}
 
       <p className="import-help">
-        {viewMode === 'related' && 'Mostrando solo documentos relacionados a un claim.'}
-        {viewMode === 'unrelated' && 'Mostrando solo documentos sin claim — revisa si alguno debe vincularse.'}
-        {viewMode === 'highlight' && 'Arrastra una fila sobre un claim para vincular. Haz clic en un claim para resaltar sus documentos.'}
+        Arrastra una fila sobre un claim para vincular. Clic en un claim = resaltar (no reduce).
+        {viewMode === 'related' && ' Vista: solo documentos relacionados.'}
+        {viewMode === 'unrelated' && ' Vista: solo documentos sin claim.'}
       </p>
       {msg && <div className="form-error">{msg}</div>}
       <div className="drop-list">
