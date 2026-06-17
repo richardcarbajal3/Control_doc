@@ -139,7 +139,7 @@ function Dashboard({ currentUser, onLogout }) {
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [showFilters]);
-  const [selectedClaimId, setSelectedClaimId] = useState(null);
+  const [selectedClaimIds, setSelectedClaimIds] = useState([]);
   const [claimView, setClaimView] = useState('highlight'); // highlight | related | unrelated
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
@@ -309,10 +309,14 @@ function Dashboard({ currentUser, onLogout }) {
   const relatedCount = useMemo(() => visibleDocs.filter((d) => d.claim_id != null).length, [visibleDocs]);
   const unrelatedCount = visibleDocs.length - relatedCount;
   const claimViewDocs = useMemo(() => {
-    if (claimView === 'related') return visibleDocs.filter((d) => d.claim_id != null);
     if (claimView === 'unrelated') return visibleDocs.filter((d) => d.claim_id == null);
+    if (claimView === 'related') {
+      const rel = visibleDocs.filter((d) => d.claim_id != null);
+      // Selecting one or more claims focuses the view on just those claims.
+      return selectedClaimIds.length ? rel.filter((d) => selectedClaimIds.includes(d.claim_id)) : rel;
+    }
     return visibleDocs;
-  }, [visibleDocs, claimView]);
+  }, [visibleDocs, claimView, selectedClaimIds]);
 
   // Create a claim inline from the side panel (no need to leave Documents).
   const handleCreateClaimInline = async (data) => {
@@ -349,7 +353,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setSelectedClaimId(null); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -413,7 +417,7 @@ function Dashboard({ currentUser, onLogout }) {
               {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimId(null); setClaimView('highlight'); }}
+                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimIds([]); setClaimView('highlight'); }}
                 >
                   🔗 {claimMode ? 'Salir de Claims' : 'Vincular a Claims'}
                 </button>
@@ -449,7 +453,7 @@ function Dashboard({ currentUser, onLogout }) {
                           onEdit={openEdit}
                           onDelete={handleDeleteDoc}
                           draggable
-                          highlightClaimId={selectedClaimId}
+                          highlightClaimIds={claimView === 'highlight' ? selectedClaimIds : []}
                         />
                       </div>
                       <ClaimDropPanel
@@ -459,8 +463,8 @@ function Dashboard({ currentUser, onLogout }) {
                         onUnassign={unlinkDoc}
                         onCreateClaim={handleCreateClaimInline}
                         defaultContract={docFilters.n_contrato?.length === 1 ? docFilters.n_contrato[0] : ''}
-                        selectedClaimId={selectedClaimId}
-                        onSelectClaim={(id) => setSelectedClaimId((prev) => (prev === id ? null : id))}
+                        selectedClaimIds={selectedClaimIds}
+                        onSelectClaim={(id) => setSelectedClaimIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))}
                         viewMode={claimView}
                         onViewMode={setClaimView}
                         relatedCount={relatedCount}
