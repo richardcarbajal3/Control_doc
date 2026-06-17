@@ -62,7 +62,9 @@ router.get('/', async (req, res) => {
       conds.push(`(documento_nro ILIKE $${s} OR descripcion ILIKE $${s}
                  OR n_contrato ILIKE $${s} OR empresa ILIKE $${s} OR transmittal ILIKE $${s})`);
     }
-    const query = `SELECT *, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso FROM documents`
+    const query = `SELECT *, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso,
+        COALESCE((SELECT array_agg(cd.claim_id) FROM claim_documents cd WHERE cd.document_id = documents.id), ARRAY[]::int[]) AS claim_ids
+      FROM documents`
       + (conds.length ? ' WHERE ' + conds.join(' AND ') : '')
       + ' ORDER BY fecha ASC NULLS LAST, transmittal ASC NULLS LAST, id ASC';
     const { rows } = await pool.query(query, params);
@@ -124,6 +126,20 @@ function buildFields(body) {
   return { cols, placeholders, values, nextParam: p };
 }
 
+// Mirror a form's claim_id into the M2M membership (add-only: never removes the
+// document from other claims). Membership is the source of truth for linking.
+async function addClaimMembership(req, documentId) {
+  const raw = req.body.claim_id;
+  if (raw == null || raw === '') return;
+  const claimId = parseInt(raw, 10);
+  if (!Number.isFinite(claimId)) return;
+  await pool.query(
+    `INSERT INTO claim_documents (claim_id, document_id, organization_id)
+     VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+    [claimId, documentId, actorOrgId(req)]
+  );
+}
+
 // Crear documento
 router.post('/', async (req, res) => {
   try {
@@ -135,6 +151,7 @@ router.post('/', async (req, res) => {
     values.push(actorOrgId(req));
     const sql = `INSERT INTO documents (${cols.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
     const { rows } = await pool.query(sql, values);
+    await addClaimMembership(req, rows[0].id);
     res.status(201).json(rows[0]);
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
@@ -157,6 +174,7 @@ router.put('/:id', async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
+    await addClaimMembership(req, rows[0].id);
     res.json(rows[0]);
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });

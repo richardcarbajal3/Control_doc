@@ -216,3 +216,19 @@ DO $$ BEGIN
     ALTER TABLE contracts ADD CONSTRAINT contracts_org_code_key UNIQUE (organization_id, code);
   END IF;
 END $$;
+
+-- =========================================================================
+-- Many-to-many: a document/transmittal can belong to several claims. The old
+-- single documents.claim_id is kept for backward-compat but membership now
+-- lives here. Existing links are backfilled (idempotent) so nothing is lost.
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS claim_documents (
+  claim_id INTEGER NOT NULL REFERENCES claims(id) ON DELETE CASCADE,
+  document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (claim_id, document_id)
+);
+INSERT INTO claim_documents (claim_id, document_id, organization_id)
+SELECT claim_id, id, organization_id FROM documents WHERE claim_id IS NOT NULL
+ON CONFLICT DO NOTHING;

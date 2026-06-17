@@ -14,7 +14,8 @@ export default function DocumentDetail({ doc, allDocuments = [], claims = [], on
     : [doc];
   const docsInTransmittal = sameTransmittal.length ? sameTransmittal : [doc];
 
-  const claim = doc.claim_id != null ? claims.find((c) => c.id === doc.claim_id) : null;
+  const claimIds = Array.isArray(doc.claim_ids) ? doc.claim_ids : (doc.claim_id != null ? [doc.claim_id] : []);
+  const linkedClaims = claimIds.map((id) => claims.find((c) => c.id === id)).filter(Boolean);
   const cData = doc.claim_data || {};
 
   const field = (label, value) => (
@@ -75,12 +76,15 @@ export default function DocumentDetail({ doc, allDocuments = [], claims = [], on
           </table>
         </div>
 
-        {claim && (
+        {linkedClaims.length > 0 && (
           <>
-            <h3 className="section-title">Claim / caso vinculado</h3>
+            <h3 className="section-title">Claims / casos vinculados ({linkedClaims.length})</h3>
             <p className="ficha-desc">
-              <span className="pill pill-ok">{claim.code ? `${claim.code} — ` : ''}{claim.title}</span>
-              {claim.status ? ` · ${claim.status}` : ''}
+              {linkedClaims.map((c) => (
+                <span key={c.id} className="pill pill-ok" style={{ marginRight: '0.4rem' }}>
+                  {c.code ? `${c.code} — ` : ''}{c.title}{c.status ? ` · ${c.status}` : ''}
+                </span>
+              ))}
             </p>
             {CLAIM_LINE_FIELDS.some((f) => cData[f.key]) && (
               <div className="ficha-grid">

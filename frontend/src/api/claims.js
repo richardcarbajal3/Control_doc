@@ -38,3 +38,20 @@ export async function deleteClaim(id) {
   if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Error al eliminar claim'); }
   return res.json();
 }
+
+// M2M membership: a document can belong to several claims.
+export async function addDocToClaim(claimId, documentId) {
+  const res = await fetch(`${BASE}/${claimId}/documents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ document_id: documentId }),
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Error al vincular documento'); }
+  return res.json();
+}
+
+export async function removeDocFromClaim(claimId, documentId) {
+  const res = await fetch(`${BASE}/${claimId}/documents/${documentId}`, { method: 'DELETE' });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Error al quitar documento'); }
+  return res.json();
+}

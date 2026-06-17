@@ -29,7 +29,7 @@ import { getDocuments, createDocument, updateDocument, deleteDocument } from './
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
 import { getProjects, createProject, updateProject, deleteProject } from './api/projects';
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
-import { getClaims, createClaim, updateClaim, deleteClaim } from './api/claims';
+import { getClaims, createClaim, updateClaim, deleteClaim, addDocToClaim, removeDocFromClaim } from './api/claims';
 import { getUsers, createUser, updateUser, deleteUser } from './api/users';
 import {
   getOrganizations, createOrganization, updateOrganization, deleteOrganization, assignOrgAdmin,
@@ -210,13 +210,13 @@ function Dashboard({ currentUser, onLogout }) {
 
   const linkDocToClaim = async (docId, claimId) => {
     setLinkBusy(true);
-    try { await updateDocument(docId, { claim_id: claimId }); docs.refresh(); claims.refresh(); }
+    try { await addDocToClaim(claimId, docId); docs.refresh(); claims.refresh(); }
     catch (err) { setDeleteError(err.message); }
     finally { setLinkBusy(false); }
   };
-  const unlinkDoc = async (docId) => {
+  const unlinkDoc = async (docId, claimId) => {
     setLinkBusy(true);
-    try { await updateDocument(docId, { claim_id: null }); docs.refresh(); claims.refresh(); }
+    try { await removeDocFromClaim(claimId, docId); docs.refresh(); claims.refresh(); }
     catch (err) { setDeleteError(err.message); }
     finally { setLinkBusy(false); }
   };
@@ -308,14 +308,16 @@ function Dashboard({ currentUser, onLogout }) {
 
   // Claim-mode view: count related/unrelated among the currently visible docs,
   // and pick which subset the table shows depending on the chosen mode.
-  const relatedCount = useMemo(() => visibleDocs.filter((d) => d.claim_id != null).length, [visibleDocs]);
+  const hasClaim = (d) => Array.isArray(d.claim_ids) && d.claim_ids.length > 0;
+  const inSelected = (d) => Array.isArray(d.claim_ids) && d.claim_ids.some((id) => selectedClaimIds.includes(id));
+  const relatedCount = useMemo(() => visibleDocs.filter(hasClaim).length, [visibleDocs]);
   const unrelatedCount = visibleDocs.length - relatedCount;
   const claimViewDocs = useMemo(() => {
-    if (claimView === 'unrelated') return visibleDocs.filter((d) => d.claim_id == null);
+    if (claimView === 'unrelated') return visibleDocs.filter((d) => !hasClaim(d));
     if (claimView === 'related') {
-      const rel = visibleDocs.filter((d) => d.claim_id != null);
-      // Selecting one or more claims focuses the view on just those claims.
-      return selectedClaimIds.length ? rel.filter((d) => selectedClaimIds.includes(d.claim_id)) : rel;
+      const rel = visibleDocs.filter(hasClaim);
+      // Selecting one or more claims focuses the view on just those claims (union).
+      return selectedClaimIds.length ? rel.filter(inSelected) : rel;
     }
     return visibleDocs;
   }, [visibleDocs, claimView, selectedClaimIds]);

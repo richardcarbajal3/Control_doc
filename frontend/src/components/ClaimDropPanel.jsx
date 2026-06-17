@@ -41,9 +41,10 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
   const docsByClaim = useMemo(() => {
     const m = new Map();
     for (const d of documents) {
-      if (d.claim_id != null) {
-        if (!m.has(d.claim_id)) m.set(d.claim_id, []);
-        m.get(d.claim_id).push(d);
+      const ids = Array.isArray(d.claim_ids) ? d.claim_ids : [];
+      for (const cid of ids) {
+        if (!m.has(cid)) m.set(cid, []);
+        m.get(cid).push(d);
       }
     }
     return m;
@@ -55,7 +56,7 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
     const id = Number(e.dataTransfer.getData('text/plain'));
     if (!id) return;
     const doc = documents.find((d) => d.id === id);
-    if (!doc || doc.claim_id === claim.id) return;
+    if (!doc || (Array.isArray(doc.claim_ids) && doc.claim_ids.includes(claim.id))) return;
     if (isClosed(claim)) {
       setMsg(`"${claim.code || claim.title}" está cerrado y no acepta más documentos.`);
       return;
@@ -174,7 +175,7 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
                             {docLabel(d)}
                             {lineSummary(d) && <span className="claim-doc-note">— {lineSummary(d)}</span>}
                           </span>
-                          <button className="chip-x" disabled={busy} onClick={() => onUnassign(d.id)}>✕</button>
+                          <button className="chip-x" disabled={busy} onClick={() => onUnassign(d.id, c.id)}>✕</button>
                         </div>
                       ))}
                 </div>
