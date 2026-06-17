@@ -16,7 +16,7 @@ const docLabel = (d) => d.documento_nro || d.descripcion || d.transmittal || `#$
 // Claims dock shown beside the documents register. Each claim is a drop target:
 // drag a table row here to link it (sets claim_id). A Cerrado claim rejects new
 // documents. Expand a claim to see/detach its documents.
-export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', busy }) {
+export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimId = null, onSelectClaim, busy }) {
   const [over, setOver] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [msg, setMsg] = useState('');
@@ -100,7 +100,7 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
         </form>
       )}
 
-      <p className="import-help">Arrastra una fila de la tabla y suéltala sobre un claim.</p>
+      <p className="import-help">Arrastra una fila sobre un claim para vincular. Haz clic en un claim para resaltar sus documentos en la tabla.</p>
       {msg && <div className="form-error">{msg}</div>}
       <div className="drop-list">
         {claims.length === 0 && <div className="empty-state"><p>Sin claims</p></div>}
@@ -111,12 +111,15 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
           return (
             <div
               key={c.id}
-              className={`claim-drop-card ${over === c.id ? 'drag-over' : ''} ${closed ? 'claim-closed' : ''}`}
+              className={`claim-drop-card ${over === c.id ? 'drag-over' : ''} ${closed ? 'claim-closed' : ''} ${selectedClaimId === c.id ? 'claim-selected' : ''}`}
               onDragOver={(e) => { if (!closed) { e.preventDefault(); setOver(c.id); } }}
               onDragLeave={() => setOver((id) => (id === c.id ? null : id))}
               onDrop={(e) => handleDrop(e, c)}
             >
-              <div className="claim-drop-head" onClick={() => setExpanded((s) => ({ ...s, [c.id]: !s[c.id] }))}>
+              <div
+                className="claim-drop-head"
+                onClick={() => { onSelectClaim?.(c.id); setExpanded((s) => ({ ...s, [c.id]: !s[c.id] })); }}
+              >
                 <span className="claim-drop-title">
                   <span className="caret">{isOpen ? '▾' : '▸'}</span>
                   {c.code ? `${c.code} — ` : ''}{c.title}
