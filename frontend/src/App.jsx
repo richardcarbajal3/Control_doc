@@ -127,6 +127,7 @@ function Dashboard({ currentUser, onLogout }) {
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -288,6 +289,7 @@ function Dashboard({ currentUser, onLogout }) {
       : docs.items;
   }, [docs.items, docFilters]);
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
+  const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
   // Create a claim inline from the side panel (no need to leave Documents).
   const handleCreateClaimInline = async (data) => {
@@ -324,7 +326,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setDocFilters({}); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -348,6 +350,44 @@ function Dashboard({ currentUser, onLogout }) {
                 onChange={(e) => activeModule.setSearch(e.target.value)}
               />
               {tab === 'documents' && (
+                <div className="filters-dropdown">
+                  <button
+                    className={`btn ${anyDocFilter ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setShowFilters((v) => !v)}
+                  >
+                    ⚙ Filtros{activeFilterCount ? ` (${activeFilterCount})` : ''}
+                  </button>
+                  {showFilters && (
+                    <div className="filters-popover">
+                      <div className="filters-popover-head">
+                        <span className="doc-filters-hint">Ctrl+clic para elegir varios o quitar</span>
+                        {anyDocFilter && (
+                          <button className="chip" onClick={() => setDocFilters({})}>Limpiar</button>
+                        )}
+                        <button className="chip" onClick={() => setShowFilters(false)}>✕</button>
+                      </div>
+                      <div className="report-filters doc-filters">
+                        {DOC_FILTER_FIELDS.map((f) => (
+                          <label key={f.key} className="report-filter">
+                            <span>{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
+                            <select
+                              multiple
+                              size={5}
+                              value={docFilters[f.key] || []}
+                              onChange={(e) =>
+                                setDocFilters((s) => ({ ...s, [f.key]: Array.from(e.target.selectedOptions, (o) => o.value) }))
+                              }
+                            >
+                              {docFilterOptions[f.key].map((v) => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setClaimMode((v) => !v)}
@@ -364,30 +404,6 @@ function Dashboard({ currentUser, onLogout }) {
                 + Nuevo {cfg.label}
               </button>
             </div>
-
-            {tab === 'documents' && (
-              <div className="report-filters doc-filters">
-                <span className="doc-filters-hint">Filtros (Ctrl+clic para elegir varios):</span>
-                {DOC_FILTER_FIELDS.map((f) => (
-                  <label key={f.key} className="report-filter">
-                    <span>{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
-                    <select
-                      multiple
-                      size={4}
-                      value={docFilters[f.key] || []}
-                      onChange={(e) =>
-                        setDocFilters((s) => ({ ...s, [f.key]: Array.from(e.target.selectedOptions, (o) => o.value) }))
-                      }
-                    >
-                      {docFilterOptions[f.key].map((v) => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </label>
-                ))}
-                {anyDocFilter && (
-                  <button className="chip" onClick={() => setDocFilters({})}>Limpiar filtros</button>
-                )}
-              </div>
-            )}
             </div>
 
             {deleteError && (
