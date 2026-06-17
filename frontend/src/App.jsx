@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import DocumentList from './components/DocumentList';
 import DocumentForm from './components/DocumentForm';
@@ -128,6 +128,17 @@ function Dashboard({ currentUser, onLogout }) {
   const [docFilters, setDocFilters] = useState({});
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const filtersRef = useRef(null);
+
+  // Close the filters popover when clicking outside of it.
+  useEffect(() => {
+    if (!showFilters) return undefined;
+    const onDown = (e) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target)) setShowFilters(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [showFilters]);
   const [selectedClaimId, setSelectedClaimId] = useState(null);
   const [claimView, setClaimView] = useState('highlight'); // highlight | related | unrelated
   const [rolesContract, setRolesContract] = useState(null);
@@ -362,7 +373,7 @@ function Dashboard({ currentUser, onLogout }) {
                 onChange={(e) => activeModule.setSearch(e.target.value)}
               />
               {tab === 'documents' && (
-                <div className="filters-dropdown">
+                <div className="filters-dropdown" ref={filtersRef}>
                   <button
                     className={`btn ${anyDocFilter ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => setShowFilters((v) => !v)}
