@@ -278,12 +278,15 @@ function Dashboard({ currentUser, onLogout }) {
     }
     return opts;
   }, [docs.items]);
+  // docFilters maps field -> array of selected values (multi-select). A field
+  // with selections keeps docs whose value is any of them; fields combine (AND).
   const visibleDocs = useMemo(() => {
-    const active = Object.entries(docFilters).filter(([, v]) => v);
+    const active = Object.entries(docFilters).filter(([, v]) => Array.isArray(v) && v.length);
     return active.length
-      ? docs.items.filter((d) => active.every(([k, v]) => String(d[k] ?? '') === v))
+      ? docs.items.filter((d) => active.every(([k, vals]) => vals.includes(String(d[k] ?? ''))))
       : docs.items;
   }, [docs.items, docFilters]);
+  const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
 
   // Create a claim inline from the side panel (no need to leave Documents).
   const handleCreateClaimInline = async (data) => {
@@ -353,19 +356,23 @@ function Dashboard({ currentUser, onLogout }) {
 
             {tab === 'documents' && (
               <div className="report-filters doc-filters">
+                <span className="doc-filters-hint">Filtros (Ctrl+clic para elegir varios):</span>
                 {DOC_FILTER_FIELDS.map((f) => (
                   <label key={f.key} className="report-filter">
-                    <span>{f.label}</span>
+                    <span>{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
                     <select
-                      value={docFilters[f.key] || ''}
-                      onChange={(e) => setDocFilters((s) => ({ ...s, [f.key]: e.target.value }))}
+                      multiple
+                      size={4}
+                      value={docFilters[f.key] || []}
+                      onChange={(e) =>
+                        setDocFilters((s) => ({ ...s, [f.key]: Array.from(e.target.selectedOptions, (o) => o.value) }))
+                      }
                     >
-                      <option value="">Todos</option>
                       {docFilterOptions[f.key].map((v) => <option key={v} value={v}>{v}</option>)}
                     </select>
                   </label>
                 ))}
-                {Object.values(docFilters).some(Boolean) && (
+                {anyDocFilter && (
                   <button className="chip" onClick={() => setDocFilters({})}>Limpiar filtros</button>
                 )}
               </div>
@@ -399,7 +406,7 @@ function Dashboard({ currentUser, onLogout }) {
                         onAssign={linkDocToClaim}
                         onUnassign={unlinkDoc}
                         onCreateClaim={handleCreateClaimInline}
-                        defaultContract={docFilters.n_contrato || ''}
+                        defaultContract={docFilters.n_contrato?.length === 1 ? docFilters.n_contrato[0] : ''}
                         busy={linkBusy}
                       />
                     </div>

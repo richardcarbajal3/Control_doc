@@ -30,7 +30,7 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
 
   return (
     <div className="table-container">
-      <table>
+      <table className="doc-table">
         <thead>
           <tr>
             {FIELDS.map((f) => (
@@ -47,11 +47,18 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
               draggable={draggable || undefined}
               onDragStart={draggable ? (e) => onRowDragStart(e, doc) : undefined}
             >
-              {FIELDS.map((f) => (
-                <td key={f.key} className={f.key === 'n_contrato' || f.key === 'documento_nro' ? 'code-cell' : ''}>
-                  {formatValue(f, doc[f.key])}
-                </td>
-              ))}
+              {FIELDS.map((f) => {
+                const text = formatValue(f, doc[f.key]);
+                const cls = [
+                  f.key === 'n_contrato' || f.key === 'documento_nro' ? 'code-cell' : '',
+                  f.type === 'textarea' ? 'cell-truncate' : '',
+                ].filter(Boolean).join(' ');
+                return (
+                  <td key={f.key} className={cls} title={text}>
+                    {text}
+                  </td>
+                );
+              })}
               <td className="actions-cell">
                 <button className="btn btn-small btn-edit" onClick={() => onEdit(doc)}>
                   Editar
