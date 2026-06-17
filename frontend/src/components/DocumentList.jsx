@@ -46,7 +46,7 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
               className={[
                 draggable ? 'doc-row-draggable' : '',
                 onRowClick ? 'doc-row-clickable' : '',
-                doc.claim_id != null && highlightClaimIds.includes(doc.claim_id) ? 'doc-row-highlight' : '',
+                Array.isArray(doc.claim_ids) && doc.claim_ids.some((id) => highlightClaimIds.includes(id)) ? 'doc-row-highlight' : '',
               ].filter(Boolean).join(' ')}
               draggable={draggable || undefined}
               onDragStart={draggable ? (e) => onRowDragStart(e, doc) : undefined}
