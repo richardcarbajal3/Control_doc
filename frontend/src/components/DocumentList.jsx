@@ -13,7 +13,7 @@ function formatValue(field, value) {
   return String(value);
 }
 
-export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimId = null }) {
+export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [] }) {
   if (documents.length === 0) {
     return (
       <div className="empty-state">
@@ -45,7 +45,7 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
               key={doc.id}
               className={[
                 draggable ? 'doc-row-draggable' : '',
-                highlightClaimId != null && doc.claim_id === highlightClaimId ? 'doc-row-highlight' : '',
+                doc.claim_id != null && highlightClaimIds.includes(doc.claim_id) ? 'doc-row-highlight' : '',
               ].filter(Boolean).join(' ')}
               draggable={draggable || undefined}
               onDragStart={draggable ? (e) => onRowDragStart(e, doc) : undefined}

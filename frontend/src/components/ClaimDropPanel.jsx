@@ -16,7 +16,7 @@ const docLabel = (d) => d.documento_nro || d.descripcion || d.transmittal || `#$
 // Claims dock shown beside the documents register. Each claim is a drop target:
 // drag a table row here to link it (sets claim_id). A Cerrado claim rejects new
 // documents. Expand a claim to see/detach its documents.
-export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimId = null, onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy }) {
+export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimIds = [], onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy }) {
   const [over, setOver] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [msg, setMsg] = useState('');
@@ -127,8 +127,11 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
       )}
 
       <p className="import-help">
-        Arrastra una fila sobre un claim para vincular. Clic en un claim = resaltar (no reduce).
-        {viewMode === 'related' && ' Vista: solo documentos relacionados.'}
+        Arrastra una fila sobre un claim para vincular.
+        {viewMode === 'highlight' && ' Clic en uno o varios claims para resaltar sus documentos.'}
+        {viewMode === 'related' && (selectedClaimIds.length
+          ? ` Mostrando documentos de ${selectedClaimIds.length} caso(s). Clic en un caso para agregar/quitar.`
+          : ' Clic en uno o varios claims para enfocar solo sus documentos.')}
         {viewMode === 'unrelated' && ' Vista: solo documentos sin claim.'}
       </p>
       {msg && <div className="form-error">{msg}</div>}
@@ -141,7 +144,7 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
           return (
             <div
               key={c.id}
-              className={`claim-drop-card ${over === c.id ? 'drag-over' : ''} ${closed ? 'claim-closed' : ''} ${selectedClaimId === c.id ? 'claim-selected' : ''}`}
+              className={`claim-drop-card ${over === c.id ? 'drag-over' : ''} ${closed ? 'claim-closed' : ''} ${selectedClaimIds.includes(c.id) ? 'claim-selected' : ''}`}
               onDragOver={(e) => { if (!closed) { e.preventDefault(); setOver(c.id); } }}
               onDragLeave={() => setOver((id) => (id === c.id ? null : id))}
               onDrop={(e) => handleDrop(e, c)}
