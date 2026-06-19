@@ -1,3 +1,5 @@
+import { buildOnedriveUrl } from '../lib/onedriveUrl';
+
 // Status values follow CONTRACT_MODEL_V1 (English). Labels stay in Spanish for UX.
 const STATUS_META = {
   'Draft':         { label: 'Borrador',        cls: 'badge-gray' },
@@ -56,7 +58,7 @@ export default function ContractList({ contracts, onEdit, onDelete, onManageRole
                 <td className="actions">
                   {onedriveBaseUrl && (
                     <a
-                      href={`${onedriveBaseUrl}/${encodeURIComponent(c.code)}`}
+                      href={buildOnedriveUrl(onedriveBaseUrl, c.code)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-small btn-secondary"
