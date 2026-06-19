@@ -25,6 +25,7 @@ import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
 import { IMPORT_CONFIGS } from './lib/importConfig';
+import { useFloatingPanel } from './lib/useFloatingPanel';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
@@ -143,6 +144,7 @@ function Dashboard({ currentUser, onLogout }) {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const filtersRef = useRef(null);
+  const filtersPanel = useFloatingPanel('docFilters', { defaultPos: { x: 24, y: 132 }, enabled: showFilters });
 
   // Auto-collapse the page header to a single line after 3s so the document
   // list gets the maximum vertical space. The toggle button still works.
@@ -428,30 +430,42 @@ function Dashboard({ currentUser, onLogout }) {
                     ⚙ Filtros{activeFilterCount ? ` (${activeFilterCount})` : ''}
                   </button>
                   {showFilters && (
-                    <div className="filters-popover">
-                      <div className="filters-popover-head">
-                        <span className="doc-filters-hint">Ctrl+clic para elegir varios o quitar</span>
-                        {anyDocFilter && (
-                          <button className="chip" onClick={() => setDocFilters({})}>Limpiar</button>
-                        )}
-                        <button className="chip" onClick={() => setShowFilters(false)}>✕</button>
+                    <div
+                      className="filters-popover filters-popover--float"
+                      ref={filtersPanel.panelRef}
+                      style={filtersPanel.style}
+                    >
+                      <div className="filters-popover-bar" onPointerDown={filtersPanel.onDragStart}>
+                        <span className="filters-popover-title">
+                          <span className="claim-dock-grip" aria-hidden="true">⠿</span>
+                          Filtros{activeFilterCount ? ` (${activeFilterCount})` : ''}
+                        </span>
+                        <span className="filters-popover-ctls">
+                          {anyDocFilter && (
+                            <button className="chip" onClick={() => setDocFilters({})}>Limpiar</button>
+                          )}
+                          <button className="dock-ctl" title="Cerrar" onClick={() => setShowFilters(false)}>✕</button>
+                        </span>
                       </div>
-                      <div className="report-filters doc-filters">
-                        {DOC_FILTER_FIELDS.map((f) => (
-                          <label key={f.key} className="report-filter">
-                            <span>{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
-                            <select
-                              multiple
-                              size={5}
-                              value={docFilters[f.key] || []}
-                              onChange={(e) =>
-                                setDocFilters((s) => ({ ...s, [f.key]: Array.from(e.target.selectedOptions, (o) => o.value) }))
-                              }
-                            >
-                              {docFilterOptions[f.key].map((v) => <option key={v} value={v}>{v}</option>)}
-                            </select>
-                          </label>
-                        ))}
+                      <div className="filters-popover-body">
+                        <div className="doc-filters-hint">Ctrl+clic para elegir varios o quitar</div>
+                        <div className="report-filters doc-filters">
+                          {DOC_FILTER_FIELDS.map((f) => (
+                            <label key={f.key} className="report-filter">
+                              <span>{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
+                              <select
+                                multiple
+                                size={5}
+                                value={docFilters[f.key] || []}
+                                onChange={(e) =>
+                                  setDocFilters((s) => ({ ...s, [f.key]: Array.from(e.target.selectedOptions, (o) => o.value) }))
+                                }
+                              >
+                                {docFilterOptions[f.key].map((v) => <option key={v} value={v}>{v}</option>)}
+                              </select>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
