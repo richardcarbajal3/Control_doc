@@ -39,15 +39,6 @@ export default function ProjectList({ projects, onEdit, onDelete }) {
               <td>{fmt(p.fecha_fin)}</td>
               <td><span className={`badge ${ESTADO_COLORS[p.estado] || 'badge-gray'}`}>{p.estado}</span></td>
               <td className="actions">
-                {p.onedrive_url && (
-                  <a
-                    href={p.onedrive_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-small btn-secondary"
-                    title="Abrir carpeta en OneDrive"
-                  >📁</a>
-                )}
                 <button className="btn btn-small btn-edit" onClick={() => onEdit(p)}>Editar</button>
                 <button className="btn btn-small btn-delete" onClick={() => onDelete(p)}>Eliminar</button>
               </td>

@@ -197,9 +197,9 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES or
 ALTER TABLE companies  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE projects   ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
 
--- OneDrive folder links per record (solo lectura compartida). Additive e idempotente.
-ALTER TABLE projects   ADD COLUMN IF NOT EXISTS onedrive_url TEXT;
-ALTER TABLE contracts  ADD COLUMN IF NOT EXISTS onedrive_url TEXT;
+-- OneDrive base URL configured once per organization. The app constructs
+-- per-contract deep links as: onedrive_base_url + '/' + contract_code
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS onedrive_base_url TEXT;
 ALTER TABLE contracts  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE claims     ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE documents  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;

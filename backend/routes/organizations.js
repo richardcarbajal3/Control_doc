@@ -25,12 +25,12 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { name, plan, status } = req.body;
+  const { name, plan, status, onedrive_base_url } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es requerido' });
   try {
     const { rows } = await pool.query(
-      `INSERT INTO organizations (name, plan, status) VALUES ($1, $2, $3) RETURNING *`,
-      [name.trim(), plan || null, status || 'active']
+      `INSERT INTO organizations (name, plan, status, onedrive_base_url) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [name.trim(), plan || null, status || 'active', onedrive_base_url || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -39,12 +39,12 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { name, plan, status } = req.body;
+  const { name, plan, status, onedrive_base_url } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE organizations SET name = COALESCE($1, name), plan = $2, status = COALESCE($3, status),
-         updated_at = NOW() WHERE id = $4 RETURNING *`,
-      [name || null, plan || null, status || null, req.params.id]
+         onedrive_base_url = $4, updated_at = NOW() WHERE id = $5 RETURNING *`,
+      [name || null, plan || null, status || null, onedrive_base_url ?? null, req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Organización no encontrada' });
     res.json(rows[0]);

@@ -18,6 +18,7 @@ import UserList from './components/UserList';
 import UserForm from './components/UserForm';
 import OrgList from './components/OrgList';
 import OrgForm from './components/OrgForm';
+import OrgSettings from './components/OrgSettings';
 import AssignAdminForm from './components/AssignAdminForm';
 import Login from './components/Login';
 import PasteGrid from './components/PasteGrid';
@@ -146,6 +147,8 @@ function Dashboard({ currentUser, onLogout }) {
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
+  const [showOrgSettings, setShowOrgSettings] = useState(false);
+  const [onedriveBaseUrl, setOnedriveBaseUrl] = useState(currentUser.onedrive_base_url || null);
 
   const docs = useModule(getDocuments);
   const claims = useModule(getClaims);
@@ -348,6 +351,15 @@ function Dashboard({ currentUser, onLogout }) {
         <div className="user-box">
           <span className="user-email">{currentUser.email}</span>
           <span className="user-role">{currentUser.role}</span>
+          {isAdmin && !isOwner && (
+            <button
+              className="btn btn-secondary btn-small"
+              onClick={() => setShowOrgSettings(true)}
+              title="Configurar integración OneDrive"
+            >
+              📁 OneDrive
+            </button>
+          )}
           <button className="btn btn-secondary btn-small" onClick={onLogout}>Salir</button>
         </div>
       </header>
@@ -459,6 +471,7 @@ function Dashboard({ currentUser, onLogout }) {
                           draggable
                           highlightClaimIds={claimView === 'highlight' ? selectedClaimIds : []}
                           onRowClick={setDocDetail}
+                          onedriveBaseUrl={onedriveBaseUrl}
                         />
                       </div>
                       <ClaimDropPanel
@@ -478,7 +491,7 @@ function Dashboard({ currentUser, onLogout }) {
                       />
                     </div>
                   ) : (
-                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} onRowClick={setDocDetail} />
+                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} onRowClick={setDocDetail} onedriveBaseUrl={onedriveBaseUrl} />
                   )
                 )}
                 {tab === 'claims' && (
@@ -501,6 +514,7 @@ function Dashboard({ currentUser, onLogout }) {
                     onEdit={openEdit}
                     onDelete={handleDeleteContract}
                     onManageRoles={isAdmin ? setRolesContract : undefined}
+                    onedriveBaseUrl={onedriveBaseUrl}
                   />
                 )}
                 {tab === 'users' && (
@@ -601,6 +615,14 @@ function Dashboard({ currentUser, onLogout }) {
 
       {rolesContract && (
         <ContractMembers contract={rolesContract} onClose={() => setRolesContract(null)} />
+      )}
+
+      {showOrgSettings && (
+        <OrgSettings
+          currentValue={onedriveBaseUrl}
+          onSaved={(url) => { setOnedriveBaseUrl(url); setShowOrgSettings(false); }}
+          onCancel={() => setShowOrgSettings(false)}
+        />
       )}
     </div>
   );

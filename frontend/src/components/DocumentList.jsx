@@ -13,7 +13,7 @@ function formatValue(field, value) {
   return String(value);
 }
 
-export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick }) {
+export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick, onedriveBaseUrl }) {
   if (documents.length === 0) {
     return (
       <div className="empty-state">
@@ -65,6 +65,16 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
                 );
               })}
               <td className="actions-cell">
+                {onedriveBaseUrl && doc.n_contrato && (
+                  <a
+                    href={`${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-small btn-secondary"
+                    title={`Abrir carpeta OneDrive: ${doc.n_contrato}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >📁</a>
+                )}
                 <button className="btn btn-small btn-edit" onClick={(e) => { e.stopPropagation(); onEdit(doc); }}>
                   Editar
                 </button>

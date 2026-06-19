@@ -31,7 +31,6 @@ const EXPECTED_CONTRACTS_COLUMNS = [
   'actual_end_date',
   'status',
   'description',
-  'onedrive_url',
   'extra_data',
   'organization_id',
   'created_at',
