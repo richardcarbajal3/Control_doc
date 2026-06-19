@@ -67,11 +67,13 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
               <td className="actions-cell">
                 {onedriveBaseUrl && doc.n_contrato && (
                   <a
-                    href={`${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}`}
+                    href={doc.transmittal
+                      ? `${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}/${encodeURIComponent(doc.transmittal)}`
+                      : `${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-small btn-secondary"
-                    title={`Abrir carpeta OneDrive: ${doc.n_contrato}`}
+                    title={doc.transmittal ? `Abrir carpeta: ${doc.transmittal}` : `Abrir carpeta contrato: ${doc.n_contrato}`}
                     onClick={(e) => e.stopPropagation()}
                   >📁</a>
                 )}
