@@ -8,7 +8,7 @@ const fmt = (v) => {
 
 // Read-only "ficha del transmittal": the transmittal header data plus every
 // document that shares the same transmittal number, with each document's status.
-export default function DocumentDetail({ doc, allDocuments = [], claims = [], onClose }) {
+export default function DocumentDetail({ doc, allDocuments = [], claims = [], onClose, onedriveBaseUrl }) {
   const sameTransmittal = doc.transmittal
     ? allDocuments.filter((d) => d.transmittal === doc.transmittal)
     : [doc];
@@ -95,6 +95,19 @@ export default function DocumentDetail({ doc, allDocuments = [], claims = [], on
         )}
 
         <div className="form-actions">
+          {onedriveBaseUrl && doc.n_contrato && (
+            <a
+              href={doc.transmittal
+                ? `${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}/${encodeURIComponent(doc.transmittal)}`
+                : `${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary"
+              title={doc.transmittal ? `Abrir carpeta: ${doc.transmittal}` : `Abrir carpeta contrato: ${doc.n_contrato}`}
+            >
+              📁 {doc.transmittal ? 'Abrir carpeta transmittal' : 'Abrir carpeta contrato'}
+            </a>
+          )}
           <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>
         </div>
       </div>

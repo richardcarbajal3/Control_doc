@@ -610,6 +610,7 @@ function Dashboard({ currentUser, onLogout }) {
           allDocuments={docs.items}
           claims={claims.items}
           onClose={() => setDocDetail(null)}
+          onedriveBaseUrl={onedriveBaseUrl}
         />
       )}
 
