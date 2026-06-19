@@ -3,7 +3,6 @@ import { IMPORT_CONFIGS } from '../lib/importConfig';
 import { buildOnedriveUrl } from '../lib/onedriveUrl';
 
 const FIELDS = IMPORT_CONFIGS.documents.fields;
-const TABLE_MIN_WIDTH = 1450;
 
 function formatValue(field, value) {
   if (value == null || value === '') return '';
@@ -91,9 +90,9 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
         </table>
       </div>
 
-      {/* Barra de scroll horizontal — justo debajo de los títulos */}
+      {/* Separador visual entre header y cuerpo (sin scrollbar horizontal) */}
       <div className="doc-h-mirror" ref={mirrorRef}>
-        <div style={{ width: `${TABLE_MIN_WIDTH}px`, height: 1 }} />
+        <div style={{ width: '100%', height: 1 }} />
       </div>
 
       {/* Cuerpo — scroll vertical, horizontal oculto (sincronizado con el mirror) */}
