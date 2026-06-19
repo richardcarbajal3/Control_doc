@@ -21,6 +21,7 @@ import OrgForm from './components/OrgForm';
 import OrgSettings from './components/OrgSettings';
 import AssignAdminForm from './components/AssignAdminForm';
 import Login from './components/Login';
+import ResetPassword from './components/ResetPassword';
 import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
@@ -72,6 +73,16 @@ function useModule(fetchFn, deps = []) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  // Token de recuperación leído del enlace del correo (…/reset-password?token=XXX).
+  const [resetToken, setResetToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return window.location.pathname.startsWith('/reset-password') ? (params.get('token') || '') : null;
+  });
+
+  const closeReset = () => {
+    setResetToken(null);
+    window.history.replaceState({}, '', '/');
+  };
 
   useEffect(() => {
     const onUnauth = () => setUser(null);
@@ -87,6 +98,7 @@ export default function App() {
 
   const onLogout = () => { logout(); setUser(null); };
 
+  if (resetToken !== null) return <ResetPassword token={resetToken} onDone={closeReset} />;
   if (checking) return <div className="loading">Cargando…</div>;
   if (!user) return <Login onLoggedIn={setUser} />;
   if (user.role !== 'superadmin' && user.organization_id == null) {

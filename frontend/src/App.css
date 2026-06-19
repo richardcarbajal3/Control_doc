@@ -808,6 +808,36 @@ tr:hover {
 .login-sub { color: var(--color-text-secondary); margin: 0 0 1.5rem; font-size: 0.9rem; }
 .btn-block { width: 100%; justify-content: center; margin-top: 0.5rem; min-height: 48px; font-size: 0.95rem; }
 .login-toggle { margin-top: 1rem; text-align: center; font-size: 0.85rem; color: var(--color-text-secondary); }
+.login-help { font-size: 0.85rem; color: var(--color-text-secondary); margin: 0 0 1rem; }
+.login-forgot { display: inline-block; margin-top: 0.5rem; font-size: 0.8rem; }
+
+/* Mensaje informativo (verde) para confirmaciones de auth. */
+.form-info {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* Campo de contraseña con botón mostrar/ocultar. */
+.password-field { position: relative; display: flex; align-items: center; }
+.password-field input { width: 100%; padding-right: 2.75rem; }
+.password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.25rem 0.35rem;
+  opacity: 0.65;
+  transition: opacity 0.15s;
+}
+.password-toggle:hover { opacity: 1; }
 
 /* ── Responsive / Mobile ──────────────────────────────────────────────── */
 @media (max-width: 640px) {

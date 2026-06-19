@@ -176,6 +176,19 @@ CREATE TABLE IF NOT EXISTS contract_members (
   UNIQUE (contract_id, user_id)
 );
 
+-- Tokens de recuperación de contraseña. Se guarda solo el hash del token (el
+-- valor en claro viaja únicamente en el enlace del correo). Expiran y son de un
+-- solo uso (used_at). ON DELETE CASCADE: al borrar el usuario, se borran.
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash VARCHAR(255) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  used_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_password_reset_token_hash ON password_reset_tokens (token_hash);
+
 -- Corporate domains allowed to register/login (e.g. shouxin.com.pe).
 CREATE TABLE IF NOT EXISTS allowed_domains (
   id SERIAL PRIMARY KEY,

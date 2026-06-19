@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PasswordInput from './PasswordInput';
 
 export default function UserForm({ user, isSuperadmin, onSave, onCancel }) {
   const [form, setForm] = useState({ email: '', full_name: '', role: 'member', password: '', is_active: true });
@@ -53,7 +54,7 @@ export default function UserForm({ user, isSuperadmin, onSave, onCancel }) {
             </div>
             <div className="form-group">
               <label htmlFor="password">{user ? 'Nueva contraseña (opcional)' : 'Contraseña'}</label>
-              <input id="password" name="password" type="password" value={form.password} onChange={change}
+              <PasswordInput id="password" name="password" value={form.password} onChange={change}
                 autoComplete="new-password" placeholder={user ? 'dejar en blanco para no cambiar' : ''} />
             </div>
           </div>
