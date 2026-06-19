@@ -99,7 +99,7 @@ export default function DocumentDetail({ doc, allDocuments = [], claims = [], on
           {onedriveBaseUrl && doc.n_contrato && (
             <a
               href={doc.transmittal
-                ? buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato, doc.transmittal)
+                ? buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato, doc.status, doc.transmittal)
                 : buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato)}
               target="_blank"
               rel="noopener noreferrer"
