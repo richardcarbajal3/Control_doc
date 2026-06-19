@@ -760,6 +760,22 @@ tr:hover {
 .header.header-collapsed p { display: none; }
 .header.header-collapsed h1 { font-size: 1.15rem; }
 
+/* Documents list: column headers stay fixed while the rows scroll. The table
+   container becomes its own scroll area so the sticky thead pins to its top
+   (just below the sticky toolbar). The collapsed header frees extra height. */
+.doc-table-scroll {
+  max-height: calc(100vh - 12.5rem);
+  overflow: auto;
+}
+.app.header-collapsed-app .doc-table-scroll {
+  max-height: calc(100vh - 9.5rem);
+}
+.doc-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
 /* Toolbar + filters stay fixed while the list scrolls. */
 .toolbar-sticky {
   position: sticky;

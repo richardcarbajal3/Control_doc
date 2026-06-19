@@ -131,6 +131,13 @@ function Dashboard({ currentUser, onLogout }) {
   const [showFilters, setShowFilters] = useState(false);
   const filtersRef = useRef(null);
 
+  // Auto-collapse the page header to a single line after 3s so the document
+  // list gets the maximum vertical space. The toggle button still works.
+  useEffect(() => {
+    const t = setTimeout(() => setHeaderCollapsed(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
   // Close the filters popover when clicking outside of it.
   useEffect(() => {
     if (!showFilters) return undefined;
@@ -306,6 +313,14 @@ function Dashboard({ currentUser, onLogout }) {
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
+  // When the documents are filtered by contract, the claims panel follows suit:
+  // only claims belonging to the selected contract(s) remain visible.
+  const visibleClaims = useMemo(() => {
+    const contracts = docFilters.n_contrato;
+    if (!Array.isArray(contracts) || !contracts.length) return claims.items;
+    return claims.items.filter((c) => contracts.includes(String(c.n_contrato ?? '')));
+  }, [claims.items, docFilters.n_contrato]);
+
   // Claim-mode view: count related/unrelated among the currently visible docs,
   // and pick which subset the table shows depending on the chosen mode.
   const hasClaim = (d) => Array.isArray(d.claim_ids) && d.claim_ids.length > 0;
@@ -330,7 +345,7 @@ function Dashboard({ currentUser, onLogout }) {
   };
 
   return (
-    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''}`}>
+    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''} ${headerCollapsed ? 'header-collapsed-app' : ''}`}>
       <header className={`header ${headerCollapsed ? 'header-collapsed' : ''}`}>
         <div className="header-title">
           <button
@@ -463,7 +478,7 @@ function Dashboard({ currentUser, onLogout }) {
                       </div>
                       <ClaimDropPanel
                         documents={visibleDocs}
-                        claims={claims.items}
+                        claims={visibleClaims}
                         onAssign={linkDocToClaim}
                         onUnassign={unlinkDoc}
                         onCreateClaim={handleCreateClaimInline}

@@ -29,7 +29,7 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
   };
 
   return (
-    <div className="table-container">
+    <div className="table-container doc-table-scroll">
       <table className="doc-table">
         <thead>
           <tr>
