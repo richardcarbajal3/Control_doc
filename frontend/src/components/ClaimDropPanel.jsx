@@ -1,6 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CLAIM_STATUS_COLORS, CLAIM_TYPES } from '../lib/claimOptions';
 import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
+
+const POS_KEY = 'claimDock.pos';
+const SIZE_KEY = 'claimDock.size';
+
+const readStored = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+const writeStored = (key, val) => {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* ignore */ }
+};
 
 // Compact "Campo 1: x · Campo 2: y" summary of a document's claim_data.
 function lineSummary(d) {
@@ -16,15 +29,74 @@ const docLabel = (d) => d.documento_nro || d.descripcion || d.transmittal || `#$
 // Claims dock shown beside the documents register. Each claim is a drop target:
 // drag a table row here to link it (sets claim_id). A Cerrado claim rejects new
 // documents. Expand a claim to see/detach its documents.
-export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimIds = [], onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy }) {
+export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimIds = [], onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy, floating = false, onToggleFloat, minimized = false, onToggleMinimize }) {
   const [over, setOver] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [msg, setMsg] = useState('');
   const [creating, setCreating] = useState(false);
   const [newClaim, setNewClaim] = useState({ title: '', type: 'Otro' });
   const [saving, setSaving] = useState(false);
+  const [pos, setPos] = useState(() => {
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const saved = readStored(POS_KEY);
+    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+      // Keep it on-screen in case the viewport shrank since last session.
+      return { x: Math.min(saved.x, vw - 60), y: Math.min(saved.y, vh - 40) };
+    }
+    return { x: Math.max(8, vw - 372), y: 88 };
+  });
+  const [size, setSize] = useState(() => readStored(SIZE_KEY) || null);
+  const dragging = useRef(false);
+  const panelRef = useRef(null);
+
+  // Persist position whenever it settles.
+  useEffect(() => { writeStored(POS_KEY, pos); }, [pos]);
+
+  // Persist size when the user resizes the floating panel (ignore while
+  // minimized, since then it collapses to just the title bar).
+  useEffect(() => {
+    if (!floating || minimized) return;
+    const el = panelRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      if (!el.offsetWidth) return;
+      const next = { w: el.offsetWidth, h: el.offsetHeight };
+      setSize((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [floating, minimized]);
+
+  useEffect(() => { if (size) writeStored(SIZE_KEY, size); }, [size]);
 
   const isClosed = (c) => String(c.status || '').trim().toUpperCase() === 'CERRADO';
+
+  // Move the floating panel by dragging its title bar. Uses pointer events
+  // (not HTML5 draggable) so it never collides with the row drag-to-link.
+  const startDrag = (e) => {
+    if (!floating || e.target.closest('.dock-ctl')) return;
+    dragging.current = true;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const orig = { ...pos };
+    const onMove = (ev) => {
+      if (!dragging.current) return;
+      const maxX = window.innerWidth - 60;
+      const maxY = window.innerHeight - 40;
+      setPos({
+        x: Math.min(maxX, Math.max(0, orig.x + (ev.clientX - startX))),
+        y: Math.min(maxY, Math.max(0, orig.y + (ev.clientY - startY))),
+      });
+    };
+    const onUp = () => {
+      dragging.current = false;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
 
   const submitNewClaim = async (e) => {
     e.preventDefault();
@@ -66,9 +138,50 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
   };
 
   return (
-    <aside className="claims-dock">
+    <aside
+      ref={panelRef}
+      className={`claims-dock ${floating ? 'claims-dock--floating' : ''} ${minimized ? 'claims-dock--min' : ''}`}
+      style={floating ? {
+        left: `${pos.x}px`,
+        top: `${pos.y}px`,
+        ...(size && !minimized ? { width: `${size.w}px`, height: `${size.h}px` } : {}),
+      } : undefined}
+    >
+      <div
+        className="claim-dock-bar"
+        onPointerDown={startDrag}
+        style={floating ? { cursor: 'grab' } : undefined}
+      >
+        <span className="claim-dock-bar-title">
+          {floating && <span className="claim-dock-grip" aria-hidden="true">⠿</span>}
+          Claims ({claims.length})
+        </span>
+        <span className="claim-dock-ctls">
+          {onToggleFloat && (
+            <button
+              type="button"
+              className="dock-ctl"
+              onClick={onToggleFloat}
+              title={floating ? 'Acoplar a la derecha' : 'Soltar como ventana flotante'}
+            >
+              {floating ? '⤓' : '⤢'}
+            </button>
+          )}
+          {onToggleMinimize && (
+            <button
+              type="button"
+              className="dock-ctl"
+              onClick={onToggleMinimize}
+              title={minimized ? 'Restaurar' : 'Minimizar'}
+            >
+              {minimized ? '▢' : '—'}
+            </button>
+          )}
+        </span>
+      </div>
+      <div className="claim-dock-body">
       <div className="claim-board-head">
-        <span className="section-title">Claims ({claims.length})</span>
+        <span className="section-title">Vincular documentos</span>
         {onCreateClaim && (
           <button className="btn btn-small btn-primary" onClick={() => setCreating((v) => !v)}>
             {creating ? '✕' : '+ Caso'}
@@ -183,6 +296,7 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
             </div>
           );
         })}
+      </div>
       </div>
     </aside>
   );
