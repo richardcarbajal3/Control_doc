@@ -31,6 +31,7 @@ export default function ContractForm({ contract, projects, companies, onSave, on
     actual_end_date: contract?.actual_end_date ? contract.actual_end_date.slice(0, 10) : '',
     status: contract?.status || 'Draft',
     description: contract?.description || '',
+    onedrive_url: contract?.onedrive_url || '',
   });
   const [error, setError] = useState('');
 
@@ -134,6 +135,15 @@ export default function ContractForm({ contract, projects, companies, onSave, on
           <div className="form-group">
             <label>Descripción / Alcance</label>
             <textarea value={form.description} onChange={set('description')} rows={3} />
+          </div>
+          <div className="form-group">
+            <label>Carpeta OneDrive</label>
+            <input
+              type="url"
+              placeholder="https://..."
+              value={form.onedrive_url}
+              onChange={set('onedrive_url')}
+            />
           </div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancelar</button>

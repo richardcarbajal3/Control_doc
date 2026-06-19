@@ -54,16 +54,16 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id } = req.body;
+  const { code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id, onedrive_url } = req.body;
   if (!code || !name) return res.status(400).json({ error: 'Código y nombre son requeridos' });
   if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin)
     return res.status(400).json({ error: 'La fecha de inicio no puede ser posterior a la fecha de fin' });
   try {
     const result = await pool.query(
-      `INSERT INTO projects (code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id, organization_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      `INSERT INTO projects (code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id, onedrive_url, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [code, name, descripcion || null, tipo || 'Construcción', ubicacion || null,
-       fecha_inicio || null, fecha_fin || null, estado || 'Planificación', company_id || null, actorOrgId(req)]
+       fecha_inicio || null, fecha_fin || null, estado || 'Planificación', company_id || null, onedrive_url || null, actorOrgId(req)]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -73,16 +73,16 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id } = req.body;
+  const { code, name, descripcion, tipo, ubicacion, fecha_inicio, fecha_fin, estado, company_id, onedrive_url } = req.body;
   if (!code || !name) return res.status(400).json({ error: 'Código y nombre son requeridos' });
   if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin)
     return res.status(400).json({ error: 'La fecha de inicio no puede ser posterior a la fecha de fin' });
   try {
     const params = [code, name, descripcion || null, tipo, ubicacion || null,
-       fecha_inicio || null, fecha_fin || null, estado, company_id || null, req.params.id];
+       fecha_inicio || null, fecha_fin || null, estado, company_id || null, onedrive_url || null, req.params.id];
     let q = `UPDATE projects SET code=$1, name=$2, descripcion=$3, tipo=$4, ubicacion=$5,
-       fecha_inicio=$6, fecha_fin=$7, estado=$8, company_id=$9, updated_at=NOW()
-       WHERE id=$10`;
+       fecha_inicio=$6, fecha_fin=$7, estado=$8, company_id=$9, onedrive_url=$10, updated_at=NOW()
+       WHERE id=$11`;
     const oc = orgCond(req, params, 'organization_id');
     if (oc) q += ` AND ${oc}`;
     q += ' RETURNING *';

@@ -132,7 +132,7 @@ router.post('/', async (req, res) => {
   const {
     code, title, type, project_id, contractor_id, mandante_id,
     amount, currency, start_date, end_date, actual_end_date,
-    status, description
+    status, description, onedrive_url
   } = req.body;
   if (!code || !title) return res.status(400).json({ error: 'Código y título son requeridos' });
   if (contractor_id && mandante_id && String(contractor_id) === String(mandante_id))
@@ -144,14 +144,14 @@ router.post('/', async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO contracts (code, title, type, project_id, contractor_id, mandante_id,
-        amount, currency, start_date, end_date, actual_end_date, status, description, organization_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+        amount, currency, start_date, end_date, actual_end_date, status, description, onedrive_url, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
       [
         code, title, type || 'Work',
         project_id || null, contractor_id || null, mandante_id || null,
         amount || null, currency || 'PEN',
         start_date || null, end_date || null, actual_end_date || null,
-        status || 'Draft', description || null, actorOrgId(req)
+        status || 'Draft', description || null, onedrive_url || null, actorOrgId(req)
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -165,7 +165,7 @@ router.put('/:id', async (req, res) => {
   const {
     code, title, type, project_id, contractor_id, mandante_id,
     amount, currency, start_date, end_date, actual_end_date,
-    status, description
+    status, description, onedrive_url
   } = req.body;
   if (!code || !title) return res.status(400).json({ error: 'Código y título son requeridos' });
   if (contractor_id && mandante_id && String(contractor_id) === String(mandante_id))
@@ -180,12 +180,12 @@ router.put('/:id', async (req, res) => {
       project_id || null, contractor_id || null, mandante_id || null,
       amount || null, currency,
       start_date || null, end_date || null, actual_end_date || null,
-      status, description || null, req.params.id
+      status, description || null, onedrive_url || null, req.params.id
     ];
     let q = `UPDATE contracts SET code=$1, title=$2, type=$3, project_id=$4, contractor_id=$5,
         mandante_id=$6, amount=$7, currency=$8, start_date=$9, end_date=$10,
-        actual_end_date=$11, status=$12, description=$13, updated_at=NOW()
-       WHERE id=$14`;
+        actual_end_date=$11, status=$12, description=$13, onedrive_url=$14, updated_at=NOW()
+       WHERE id=$15`;
     const oc = orgCond(req, params, 'organization_id');
     if (oc) q += ` AND ${oc}`;
     q += ' RETURNING *';

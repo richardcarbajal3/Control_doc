@@ -15,6 +15,7 @@ export default function ProjectForm({ project, companies, onSave, onCancel }) {
     fecha_fin: project?.fecha_fin ? project.fecha_fin.slice(0, 10) : '',
     estado: project?.estado || 'Planificación',
     company_id: project?.company_id || '',
+    onedrive_url: project?.onedrive_url || '',
   });
   const [error, setError] = useState('');
 
@@ -87,6 +88,15 @@ export default function ProjectForm({ project, companies, onSave, onCancel }) {
           <div className="form-group">
             <label>Descripción</label>
             <textarea value={form.descripcion} onChange={set('descripcion')} rows={3} />
+          </div>
+          <div className="form-group">
+            <label>Carpeta OneDrive</label>
+            <input
+              type="url"
+              placeholder="https://..."
+              value={form.onedrive_url}
+              onChange={set('onedrive_url')}
+            />
           </div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancelar</button>

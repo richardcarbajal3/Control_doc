@@ -54,6 +54,15 @@ export default function ContractList({ contracts, onEdit, onDelete, onManageRole
                 <td>{fmt(c.end_date)}</td>
                 <td><span className={`badge ${status.cls}`}>{status.label}</span></td>
                 <td className="actions">
+                  {c.onedrive_url && (
+                    <a
+                      href={c.onedrive_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-small btn-secondary"
+                      title="Abrir carpeta en OneDrive"
+                    >📁</a>
+                  )}
                   {onManageRoles && (
                     <button className="btn btn-small btn-secondary" onClick={() => onManageRoles(c)}>Roles</button>
                   )}
