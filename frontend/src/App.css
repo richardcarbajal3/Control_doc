@@ -1139,6 +1139,73 @@ tr:hover {
 }
 .app.claim-active .docs-claim-split { display: block; }
 
+/* ── Dock title bar + window controls (movable / minimizable panel) ──── */
+.claim-dock-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: -0.7rem -0.9rem 0.6rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.8rem;
+  border-bottom: 1px solid var(--color-border-soft);
+  background: #f1f5f9;
+  border-radius: 8px 8px 0 0;
+  user-select: none;
+}
+.claim-dock-bar-title {
+  font-size: 0.8rem; font-weight: 700; color: #1e293b;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.claim-dock-grip { color: #94a3b8; font-size: 0.9rem; line-height: 1; }
+.claim-dock-ctls { display: flex; gap: 0.25rem; }
+.dock-ctl {
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--color-border-soft); border-radius: 6px;
+  background: #fff; color: #334155; cursor: pointer;
+  font-size: 0.9rem; line-height: 1; padding: 0;
+}
+.dock-ctl:hover { background: #e2e8f0; }
+
+/* Floating window: positioned from inline left/top, draggable by its bar. */
+.claims-dock.claims-dock--floating {
+  position: fixed;
+  right: auto; bottom: auto;
+  width: 344px;
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+  z-index: 60;
+  resize: both;
+}
+.claims-dock.claims-dock--floating .claim-dock-body { overflow: auto; flex: 1; min-height: 0; }
+
+/* Minimized: only the title bar remains. */
+.claims-dock.claims-dock--min { resize: none; }
+.claims-dock.claims-dock--min .claim-dock-body { display: none; }
+.claims-dock.claims-dock--min .claim-dock-bar { margin-bottom: -0.7rem; border-bottom: none; border-radius: 8px; }
+
+/* Floating mode reclaims the space the docked panel reserved → full-width table. */
+.app.claim-active.claim-floating .header { padding-right: 2rem; }
+.app.claim-active.claim-floating .tabs { padding-right: 1rem; }
+.app.claim-active.claim-floating .main { padding-right: 1.5rem; }
+.app.claim-active.claim-floating .claims-dock {
+  top: auto; right: auto; bottom: auto; left: auto;
+  height: auto; border-left: 1px solid var(--color-border-soft);
+}
+
+/* Docked + minimized: shrink to a bar in the top-right, free the table. */
+.app.claim-active.claim-min:not(.claim-floating) .header { padding-right: 2rem; }
+.app.claim-active.claim-min:not(.claim-floating) .tabs { padding-right: 1rem; }
+.app.claim-active.claim-min:not(.claim-floating) .main { padding-right: 1.5rem; }
+.app.claim-active.claim-min:not(.claim-floating) .claims-dock {
+  bottom: auto; height: auto; width: 240px;
+  border: 1px solid var(--color-border-soft); border-radius: 0 0 0 var(--radius-md);
+}
+
 @media (max-width: 900px) {
   .app.claim-active .header,
   .app.claim-active .tabs,
@@ -1147,6 +1214,7 @@ tr:hover {
     position: static; width: auto; border-left: none;
     border: 1px solid var(--color-border-soft); border-radius: var(--radius-md); box-shadow: none;
   }
+  .claims-dock.claims-dock--floating { position: static; width: auto; resize: none; max-height: none; }
 }
 
 /* ── Filters as a dropdown popover (saves vertical space) ────────────── */

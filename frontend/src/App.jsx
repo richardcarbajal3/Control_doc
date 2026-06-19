@@ -126,6 +126,8 @@ function Dashboard({ currentUser, onLogout }) {
   const [editing, setEditing] = useState(null);
   const [claimDetail, setClaimDetail] = useState(null);
   const [claimMode, setClaimMode] = useState(false);
+  const [claimFloat, setClaimFloat] = useState(false);
+  const [claimMin, setClaimMin] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
@@ -348,7 +350,7 @@ function Dashboard({ currentUser, onLogout }) {
   };
 
   return (
-    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''} ${headerCollapsed ? 'header-collapsed-app' : ''}`}>
+    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''} ${claimMode && claimFloat ? 'claim-floating' : ''} ${claimMode && claimMin ? 'claim-min' : ''} ${headerCollapsed ? 'header-collapsed-app' : ''}`}>
       <header className={`header ${headerCollapsed ? 'header-collapsed' : ''}`}>
         <div className="header-title">
           <button
@@ -384,7 +386,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setClaimFloat(false); setClaimMin(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -448,7 +450,7 @@ function Dashboard({ currentUser, onLogout }) {
               {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimIds([]); setClaimView('highlight'); }}
+                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimIds([]); setClaimView('highlight'); setClaimFloat(false); setClaimMin(false); }}
                 >
                   🔗 {claimMode ? 'Salir de Claims' : 'Vincular a Claims'}
                 </button>
@@ -503,6 +505,10 @@ function Dashboard({ currentUser, onLogout }) {
                         relatedCount={relatedCount}
                         unrelatedCount={unrelatedCount}
                         busy={linkBusy}
+                        floating={claimFloat}
+                        onToggleFloat={() => setClaimFloat((v) => !v)}
+                        minimized={claimMin}
+                        onToggleMinimize={() => setClaimMin((v) => !v)}
                       />
                     </div>
                   ) : (
