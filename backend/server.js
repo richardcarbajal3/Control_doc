@@ -14,6 +14,7 @@ const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const organizationsRouter = require('./routes/organizations');
 const contractMembersRouter = require('./routes/contractMembers');
+const settingsRouter = require('./routes/settings');
 const { requireAuth, requireOrgAccess } = require('./middleware/auth');
 
 const app = express();
@@ -33,6 +34,7 @@ app.get('/api/health', (req, res) => {
 // Account administration (each router enforces its own role).
 app.use('/api/users', usersRouter);
 app.use('/api/organizations', organizationsRouter);
+app.use('/api/settings', settingsRouter);
 app.use('/api/contracts/:contractId/members', contractMembersRouter);
 
 // Data routes: require a session AND belonging to an organization (or owner).

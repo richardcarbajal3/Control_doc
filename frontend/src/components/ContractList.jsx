@@ -16,7 +16,7 @@ const TYPE_LABELS = {
 const fmt = (d) => d ? new Date(d).toLocaleDateString('es-PE') : '—';
 const fmtMonto = (m, currency) => m != null ? `${currency} ${Number(m).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '—';
 
-export default function ContractList({ contracts, onEdit, onDelete, onManageRoles }) {
+export default function ContractList({ contracts, onEdit, onDelete, onManageRoles, onedriveBaseUrl }) {
   if (contracts.length === 0) {
     return <div className="empty-state">No hay contratos registrados.</div>;
   }
@@ -54,6 +54,15 @@ export default function ContractList({ contracts, onEdit, onDelete, onManageRole
                 <td>{fmt(c.end_date)}</td>
                 <td><span className={`badge ${status.cls}`}>{status.label}</span></td>
                 <td className="actions">
+                  {onedriveBaseUrl && (
+                    <a
+                      href={`${onedriveBaseUrl}/${encodeURIComponent(c.code)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-small btn-secondary"
+                      title={`Abrir carpeta OneDrive: ${c.code}`}
+                    >📁</a>
+                  )}
                   {onManageRoles && (
                     <button className="btn btn-small btn-secondary" onClick={() => onManageRoles(c)}>Roles</button>
                   )}
