@@ -14,6 +14,11 @@ function formatValue(field, value) {
   return String(value);
 }
 
+function abbrev(text, n) {
+  if (!text || text.length <= n) return text;
+  return text.slice(0, n) + '…';
+}
+
 export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick, onedriveBaseUrl }) {
   if (documents.length === 0) {
     return (
@@ -32,10 +37,16 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
   return (
     <div className="table-container doc-table-scroll">
       <table className="doc-table">
+        <colgroup>
+          {FIELDS.map((f) => (
+            <col key={f.key} style={f.colWidth ? { width: `${f.colWidth}px` } : {}} />
+          ))}
+          <col style={{ width: '130px' }} />
+        </colgroup>
         <thead>
           <tr>
             {FIELDS.map((f) => (
-              <th key={f.key}>{f.label}</th>
+              <th key={f.key} title={f.label}>{f.label}</th>
             ))}
             <th>Acciones</th>
           </tr>
@@ -55,13 +66,11 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
             >
               {FIELDS.map((f) => {
                 const text = formatValue(f, doc[f.key]);
-                const cls = [
-                  f.key === 'n_contrato' || f.key === 'documento_nro' ? 'code-cell' : '',
-                  f.type === 'textarea' ? 'cell-truncate' : '',
-                ].filter(Boolean).join(' ');
+                const display = f.abbrev ? abbrev(text, f.abbrev) : text;
+                const cls = f.key === 'n_contrato' || f.key === 'documento_nro' ? 'code-cell' : undefined;
                 return (
                   <td key={f.key} className={cls} title={text}>
-                    {text}
+                    {display}
                   </td>
                 );
               })}

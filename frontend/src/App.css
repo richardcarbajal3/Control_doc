@@ -997,14 +997,18 @@ tr:hover {
 .claim-create-meta { font-size: 0.75rem; color: #64748b; }
 
 /* ── Compact documents table (no wrap) + multi-select filters ────────── */
+.doc-table {
+  table-layout: fixed;
+  min-width: 1610px;
+}
 .doc-table th, .doc-table td {
   white-space: nowrap;
-  padding-top: 0.35rem;
-  padding-bottom: 0.35rem;
+  padding: 0.35rem 0.5rem;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .doc-table .cell-truncate {
-  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
