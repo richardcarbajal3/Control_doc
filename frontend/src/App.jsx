@@ -126,8 +126,18 @@ function Dashboard({ currentUser, onLogout }) {
   const [editing, setEditing] = useState(null);
   const [claimDetail, setClaimDetail] = useState(null);
   const [claimMode, setClaimMode] = useState(false);
-  const [claimFloat, setClaimFloat] = useState(false);
-  const [claimMin, setClaimMin] = useState(false);
+  const [claimFloat, setClaimFloat] = useState(() => {
+    try { return localStorage.getItem('claimDock.float') === '1'; } catch { return false; }
+  });
+  const [claimMin, setClaimMin] = useState(() => {
+    try { return localStorage.getItem('claimDock.min') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('claimDock.float', claimFloat ? '1' : '0'); } catch { /* ignore */ }
+  }, [claimFloat]);
+  useEffect(() => {
+    try { localStorage.setItem('claimDock.min', claimMin ? '1' : '0'); } catch { /* ignore */ }
+  }, [claimMin]);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
@@ -386,7 +396,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setClaimFloat(false); setClaimMin(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -450,7 +460,7 @@ function Dashboard({ currentUser, onLogout }) {
               {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimIds([]); setClaimView('highlight'); setClaimFloat(false); setClaimMin(false); }}
+                  onClick={() => { setClaimMode((v) => !v); setSelectedClaimIds([]); setClaimView('highlight'); }}
                 >
                   🔗 {claimMode ? 'Salir de Claims' : 'Vincular a Claims'}
                 </button>

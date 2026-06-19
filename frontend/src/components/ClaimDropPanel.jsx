@@ -1,6 +1,19 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CLAIM_STATUS_COLORS, CLAIM_TYPES } from '../lib/claimOptions';
 import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
+
+const POS_KEY = 'claimDock.pos';
+const SIZE_KEY = 'claimDock.size';
+
+const readStored = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+const writeStored = (key, val) => {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* ignore */ }
+};
 
 // Compact "Campo 1: x · Campo 2: y" summary of a document's claim_data.
 function lineSummary(d) {
@@ -23,11 +36,39 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
   const [creating, setCreating] = useState(false);
   const [newClaim, setNewClaim] = useState({ title: '', type: 'Otro' });
   const [saving, setSaving] = useState(false);
-  const [pos, setPos] = useState(() => ({
-    x: Math.max(8, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 372),
-    y: 88,
-  }));
+  const [pos, setPos] = useState(() => {
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const saved = readStored(POS_KEY);
+    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+      // Keep it on-screen in case the viewport shrank since last session.
+      return { x: Math.min(saved.x, vw - 60), y: Math.min(saved.y, vh - 40) };
+    }
+    return { x: Math.max(8, vw - 372), y: 88 };
+  });
+  const [size, setSize] = useState(() => readStored(SIZE_KEY) || null);
   const dragging = useRef(false);
+  const panelRef = useRef(null);
+
+  // Persist position whenever it settles.
+  useEffect(() => { writeStored(POS_KEY, pos); }, [pos]);
+
+  // Persist size when the user resizes the floating panel (ignore while
+  // minimized, since then it collapses to just the title bar).
+  useEffect(() => {
+    if (!floating || minimized) return;
+    const el = panelRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      if (!el.offsetWidth) return;
+      const next = { w: el.offsetWidth, h: el.offsetHeight };
+      setSize((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [floating, minimized]);
+
+  useEffect(() => { if (size) writeStored(SIZE_KEY, size); }, [size]);
 
   const isClosed = (c) => String(c.status || '').trim().toUpperCase() === 'CERRADO';
 
@@ -98,8 +139,13 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
 
   return (
     <aside
+      ref={panelRef}
       className={`claims-dock ${floating ? 'claims-dock--floating' : ''} ${minimized ? 'claims-dock--min' : ''}`}
-      style={floating ? { left: `${pos.x}px`, top: `${pos.y}px` } : undefined}
+      style={floating ? {
+        left: `${pos.x}px`,
+        top: `${pos.y}px`,
+        ...(size && !minimized ? { width: `${size.w}px`, height: `${size.h}px` } : {}),
+      } : undefined}
     >
       <div
         className="claim-dock-bar"
