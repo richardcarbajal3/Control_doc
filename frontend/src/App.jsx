@@ -391,7 +391,7 @@ function Dashboard({ currentUser, onLogout }) {
         ))}
       </nav>
 
-      <main className="main">
+      <main className={`main${tab === 'documents' ? ' main-full' : ''}`}>
         {tab === 'presentation' ? (
           <PresentationReport />
         ) : tab === 'report' ? (
