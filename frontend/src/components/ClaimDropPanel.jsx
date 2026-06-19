@@ -4,6 +4,7 @@ import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
 
 const POS_KEY = 'claimDock.pos';
 const SIZE_KEY = 'claimDock.size';
+const HELP_KEY = 'claimDock.help';
 
 const readStored = (key) => {
   try {
@@ -47,8 +48,11 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
     return { x: Math.max(8, vw - 372), y: 88 };
   });
   const [size, setSize] = useState(() => readStored(SIZE_KEY) || null);
+  const [showHelp, setShowHelp] = useState(() => readStored(HELP_KEY) === true);
   const dragging = useRef(false);
   const panelRef = useRef(null);
+
+  useEffect(() => { writeStored(HELP_KEY, showHelp); }, [showHelp]);
 
   // Persist position whenever it settles.
   useEffect(() => { writeStored(POS_KEY, pos); }, [pos]);
@@ -157,6 +161,14 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
           Claims ({claims.length})
         </span>
         <span className="claim-dock-ctls">
+          <button
+            type="button"
+            className={`dock-ctl ${showHelp ? 'dock-ctl-on' : ''}`}
+            onClick={() => setShowHelp((v) => !v)}
+            title={showHelp ? 'Ocultar ayuda' : 'Mostrar ayuda'}
+          >
+            ?
+          </button>
           {onToggleFloat && (
             <button
               type="button"
@@ -240,14 +252,16 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
         </div>
       )}
 
-      <p className="import-help">
-        Arrastra una fila sobre un claim para vincular.
-        {viewMode === 'highlight' && ' Clic en uno o varios claims para resaltar sus documentos.'}
-        {viewMode === 'related' && (selectedClaimIds.length
-          ? ` Mostrando documentos de ${selectedClaimIds.length} caso(s). Clic en un caso para agregar/quitar.`
-          : ' Clic en uno o varios claims para enfocar solo sus documentos.')}
-        {viewMode === 'unrelated' && ' Vista: solo documentos sin claim.'}
-      </p>
+      {showHelp && (
+        <p className="import-help">
+          Arrastra una fila sobre un claim para vincular.
+          {viewMode === 'highlight' && ' Clic en uno o varios claims para resaltar sus documentos.'}
+          {viewMode === 'related' && (selectedClaimIds.length
+            ? ` Mostrando documentos de ${selectedClaimIds.length} caso(s). Clic en un caso para agregar/quitar.`
+            : ' Clic en uno o varios claims para enfocar solo sus documentos.')}
+          {viewMode === 'unrelated' && ' Vista: solo documentos sin claim.'}
+        </p>
+      )}
       {msg && <div className="form-error">{msg}</div>}
       <div className="drop-list">
         {claims.length === 0 && <div className="empty-state"><p>Sin claims</p></div>}

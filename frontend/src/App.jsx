@@ -143,6 +143,12 @@ function Dashboard({ currentUser, onLogout }) {
   const [docFilters, setDocFilters] = useState({});
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showFilterHelp, setShowFilterHelp] = useState(() => {
+    try { return localStorage.getItem('docFilters.help') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('docFilters.help', showFilterHelp ? '1' : '0'); } catch { /* ignore */ }
+  }, [showFilterHelp]);
   const filtersRef = useRef(null);
   const filtersPanel = useFloatingPanel('docFilters', { defaultPos: { x: 24, y: 132 }, enabled: showFilters });
 
@@ -444,11 +450,20 @@ function Dashboard({ currentUser, onLogout }) {
                           {anyDocFilter && (
                             <button className="chip" onClick={() => setDocFilters({})}>Limpiar</button>
                           )}
+                          <button
+                            className={`dock-ctl ${showFilterHelp ? 'dock-ctl-on' : ''}`}
+                            title={showFilterHelp ? 'Ocultar ayuda' : 'Mostrar ayuda'}
+                            onClick={() => setShowFilterHelp((v) => !v)}
+                          >
+                            ?
+                          </button>
                           <button className="dock-ctl" title="Cerrar" onClick={() => setShowFilters(false)}>✕</button>
                         </span>
                       </div>
                       <div className="filters-popover-body">
-                        <div className="doc-filters-hint">Ctrl+clic para elegir varios o quitar</div>
+                        {showFilterHelp && (
+                          <div className="doc-filters-hint">Ctrl+clic para elegir varios o quitar</div>
+                        )}
                         <div className="report-filters doc-filters">
                           {DOC_FILTER_FIELDS.map((f) => (
                             <label key={f.key} className="report-filter">

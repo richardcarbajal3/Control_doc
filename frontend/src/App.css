@@ -1114,6 +1114,7 @@ tr:hover {
 }
 .doc-filters .report-filter select[multiple] {
   width: 100%; min-width: 0; height: 88px;
+  resize: vertical; overflow: auto; min-height: 56px; max-height: 320px;
 }
 
 /* ── Claims dock as a fixed floating panel (always visible when active) ── */
@@ -1166,6 +1167,8 @@ tr:hover {
   font-size: 0.9rem; line-height: 1; padding: 0;
 }
 .dock-ctl:hover { background: #e2e8f0; }
+.dock-ctl-on { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+.dock-ctl-on:hover { background: #24477a; }
 
 /* Floating window: positioned from inline left/top, draggable by its bar. */
 .claims-dock.claims-dock--floating {
