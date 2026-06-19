@@ -7,10 +7,11 @@ export const IMPORT_CONFIGS = {
     fields: [
       // STATUS y STATUS G son del TRANSMITTAL (no del documento): STATUS = sentido
       // del envío (enviado/recibido); STATUS G = atención (atendido/pendiente).
-      { key: 'status', label: 'STATUS', options: ['ENVIADO', 'RECIBIDO'], colWidth: 78 },
-      { key: 'status_g', label: 'STATUS G', options: ['ATENDIDO', 'PENDIENTE'], colWidth: 82 },
+      // rtl:true → celda usa direction:rtl, se ve el FINAL del texto (útil para valores largos)
+      { key: 'status', label: 'STATUS', options: ['ENVIADO', 'RECIBIDO'], colWidth: 52, rtl: true },
+      { key: 'status_g', label: 'STATUS G', options: ['ATENDIDO', 'PENDIENTE'], colWidth: 52, rtl: true },
       { key: 'n_contrato', label: 'N° CONTRATO', colWidth: 100 },
-      { key: 'empresa', label: 'EMPRESA', colWidth: 105 },
+      { key: 'empresa', label: 'EMPRESA', colWidth: 52, rtl: true },
       // abbrev: 4 — muestra solo las primeras 4 letras en la tabla; texto completo al hover
       { key: 'contrato', label: 'CONTRATO', colWidth: 80, abbrev: 4 },
       { key: 'descripcion_contrato', label: 'DESCRIPCIÓN CONTRATO', type: 'textarea', colWidth: 108 },
@@ -20,11 +21,11 @@ export const IMPORT_CONFIGS = {
       { key: 'documento_nro', label: 'DOCUMENTO NRO', colWidth: 132 },
       { key: 'rev', label: 'REV.', colWidth: 46 },
       { key: 'descripcion', label: 'DESCRIPCIÓN', type: 'textarea', colWidth: 190 },
-      { key: 'tipo_doc', label: 'TIPO DE DOC', colWidth: 80 },
+      { key: 'tipo_doc', label: 'TIPO DE DOC', colWidth: 52, rtl: true },
       // STATUS DE CONTRATISTA es el estado del DOCUMENTO en sí (revisión técnica).
       { key: 'status_contratista', label: 'STATUS DE CONTRATISTA',
         options: ['APROBADO', 'EN REVISIÓN', 'CON OBSERVACIONES', 'ANULADO'], colWidth: 100 },
-      { key: 'responsable', label: 'RESPONSABLE', colWidth: 94 },
+      { key: 'responsable', label: 'RESPONSABLE', colWidth: 68, rtl: true },
     ],
   },
   companies: {
