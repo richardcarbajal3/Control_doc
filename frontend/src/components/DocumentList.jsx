@@ -1,4 +1,5 @@
 import { IMPORT_CONFIGS } from '../lib/importConfig';
+import { buildOnedriveUrl } from '../lib/onedriveUrl';
 
 const FIELDS = IMPORT_CONFIGS.documents.fields;
 
@@ -68,8 +69,8 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
                 {onedriveBaseUrl && doc.n_contrato && (
                   <a
                     href={doc.transmittal
-                      ? `${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}/${encodeURIComponent(doc.transmittal)}`
-                      : `${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}`}
+                      ? buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato, doc.transmittal)
+                      : buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-small btn-secondary"

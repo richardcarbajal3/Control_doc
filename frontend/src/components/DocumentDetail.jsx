@@ -1,4 +1,5 @@
 import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
+import { buildOnedriveUrl } from '../lib/onedriveUrl';
 
 const fmt = (v) => {
   if (!v) return '—';
@@ -98,8 +99,8 @@ export default function DocumentDetail({ doc, allDocuments = [], claims = [], on
           {onedriveBaseUrl && doc.n_contrato && (
             <a
               href={doc.transmittal
-                ? `${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}/${encodeURIComponent(doc.transmittal)}`
-                : `${onedriveBaseUrl}/${encodeURIComponent(doc.n_contrato)}`}
+                ? buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato, doc.transmittal)
+                : buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-secondary"
