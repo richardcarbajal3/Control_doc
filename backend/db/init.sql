@@ -236,3 +236,18 @@ CREATE TABLE IF NOT EXISTS claim_documents (
 INSERT INTO claim_documents (claim_id, document_id, organization_id)
 SELECT claim_id, id, organization_id FROM documents WHERE claim_id IS NOT NULL
 ON CONFLICT DO NOTHING;
+
+-- =========================================================================
+-- Document classification rules: two-pass classification (code first, then
+-- keywords). source = 'codigo' matches against documento_nro; 'descripcion'
+-- matches against the descripcion field. Lower priority number = runs first.
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS doc_classification_rules (
+  id SERIAL PRIMARY KEY,
+  organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+  source VARCHAR(20) NOT NULL DEFAULT 'codigo',
+  pattern VARCHAR(255) NOT NULL,
+  familia VARCHAR(100) NOT NULL,
+  priority INTEGER NOT NULL DEFAULT 10,
+  created_at TIMESTAMP DEFAULT NOW()
+);
