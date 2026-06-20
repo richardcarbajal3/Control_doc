@@ -24,6 +24,10 @@ import Login from './components/Login';
 import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
+import RFIPanel from './components/RFIPanel';
+import ChangeOrderList from './components/ChangeOrderList';
+import ChangeOrderForm from './components/ChangeOrderForm';
+import ChangeOrderDetail from './components/ChangeOrderDetail';
 import { IMPORT_CONFIGS } from './lib/importConfig';
 import { useFloatingPanel } from './lib/useFloatingPanel';
 
@@ -32,6 +36,7 @@ import { getCompanies, createCompany, updateCompany, deleteCompany } from './api
 import { getProjects, createProject, updateProject, deleteProject } from './api/projects';
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
 import { getClaims, createClaim, updateClaim, deleteClaim, addDocToClaim, removeDocFromClaim } from './api/claims';
+import { getChangeOrders, createChangeOrder, updateChangeOrder, deleteChangeOrder } from './api/changeOrders';
 import { getUsers, createUser, updateUser, deleteUser } from './api/users';
 import {
   getOrganizations, createOrganization, updateOrganization, deleteOrganization, assignOrgAdmin,
@@ -42,6 +47,7 @@ import { getToken } from './api/http';
 const BASE_TABS = [
   { key: 'documents', label: 'Documentos' },
   { key: 'claims', label: 'Claims' },
+  { key: 'change-orders', label: 'Órd. Cambio' },
   { key: 'companies', label: 'Empresas' },
   { key: 'projects', label: 'Proyectos' },
   { key: 'contracts', label: 'Contratos' },
@@ -185,6 +191,7 @@ function Dashboard({ currentUser, onLogout }) {
   }, [showFilters]);
   const [selectedClaimIds, setSelectedClaimIds] = useState([]);
   const [docDetail, setDocDetail] = useState(null);
+  const [coDetail, setCoDetail] = useState(null);
   const [claimView, setClaimView] = useState('highlight'); // highlight | related | unrelated
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
@@ -194,6 +201,7 @@ function Dashboard({ currentUser, onLogout }) {
 
   const docs = useModule(getDocuments);
   const claims = useModule(getClaims);
+  const changeOrders = useModule(getChangeOrders);
   const companies = useModule(getCompanies);
   const projects = useModule(getProjects);
   const contracts = useModule(getContracts);
@@ -278,6 +286,25 @@ function Dashboard({ currentUser, onLogout }) {
     }
   };
 
+  const handleSaveChangeOrder = async (data) => {
+    if (editing) await updateChangeOrder(editing.id, data);
+    else await createChangeOrder(data);
+    closeForm(); changeOrders.refresh();
+  };
+  const handleDeleteChangeOrder = async (co) => {
+    if (window.confirm(`¿Eliminar la orden de cambio "${co.title}"?`)) {
+      try { await deleteChangeOrder(co.id); changeOrders.refresh(); setDeleteError(''); }
+      catch (err) { setDeleteError(err.message); }
+    }
+  };
+
+  // Contextual row-click: RFI → RFIPanel, else → DocumentDetail
+  const handleDocRowClick = (doc) => {
+    const tipo = (doc.tipo_doc || '').toUpperCase().trim();
+    if (tipo === 'RFI') setDocDetail({ ...doc, _panel: 'rfi' });
+    else setDocDetail(doc);
+  };
+
   const handleSaveUser = async (data) => {
     if (editing) await updateUser(editing.id, data);
     else await createUser(data);
@@ -316,7 +343,7 @@ function Dashboard({ currentUser, onLogout }) {
     organizations: { label: 'Cliente', searchPlaceholder: 'Clientes…' },
   };
 
-  const activeModule = { documents: docs, claims, companies, projects, contracts, users, organizations: orgs }[tab];
+  const activeModule = { documents: docs, claims, 'change-orders': changeOrders, companies, projects, contracts, users, organizations: orgs }[tab];
   const cfg = tabConfig[tab];
   const importConfig = IMPORT_CONFIGS[tab];
 
@@ -589,7 +616,7 @@ function Dashboard({ currentUser, onLogout }) {
                           onDelete={handleDeleteDoc}
                           draggable
                           highlightClaimIds={claimView === 'highlight' ? selectedClaimIds : []}
-                          onRowClick={setDocDetail}
+                          onRowClick={handleDocRowClick}
                           onedriveBaseUrl={onedriveBaseUrl}
                         />
                       </div>
@@ -615,7 +642,7 @@ function Dashboard({ currentUser, onLogout }) {
                       />
                     </div>
                   ) : (
-                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} onRowClick={setDocDetail} onedriveBaseUrl={onedriveBaseUrl} />
+                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} onRowClick={handleDocRowClick} onedriveBaseUrl={onedriveBaseUrl} />
                   )
                 )}
                 {tab === 'claims' && (
@@ -624,6 +651,14 @@ function Dashboard({ currentUser, onLogout }) {
                     onEdit={openEdit}
                     onDelete={handleDeleteClaim}
                     onOpen={(c) => setClaimDetail(c)}
+                  />
+                )}
+                {tab === 'change-orders' && (
+                  <ChangeOrderList
+                    changeOrders={changeOrders.items}
+                    onEdit={openEdit}
+                    onDelete={handleDeleteChangeOrder}
+                    onOpen={(co) => setCoDetail(co)}
                   />
                 )}
                 {tab === 'companies' && (
@@ -674,6 +709,9 @@ function Dashboard({ currentUser, onLogout }) {
       )}
       {showForm && tab === 'claims' && (
         <ClaimForm claim={editing} onSave={handleSaveClaim} onCancel={closeForm} />
+      )}
+      {showForm && tab === 'change-orders' && (
+        <ChangeOrderForm co={editing} onSave={handleSaveChangeOrder} onCancel={closeForm} />
       )}
       {showForm && tab === 'users' && (
         <UserForm
@@ -729,13 +767,29 @@ function Dashboard({ currentUser, onLogout }) {
         />
       )}
 
-      {docDetail && (
+      {docDetail && docDetail._panel === 'rfi' ? (
+        <RFIPanel
+          doc={docDetail}
+          allDocuments={docs.items}
+          onClose={() => setDocDetail(null)}
+          onChanged={() => { docs.refresh(); claims.refresh(); }}
+        />
+      ) : docDetail ? (
         <DocumentDetail
           doc={docDetail}
           allDocuments={docs.items}
           claims={claims.items}
           onClose={() => setDocDetail(null)}
           onedriveBaseUrl={onedriveBaseUrl}
+        />
+      ) : null}
+
+      {coDetail && (
+        <ChangeOrderDetail
+          co={coDetail}
+          allDocuments={docs.items}
+          onClose={() => setCoDetail(null)}
+          onChanged={() => changeOrders.refresh()}
         />
       )}
 

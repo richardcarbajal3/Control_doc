@@ -12,12 +12,14 @@ const DOC_COLUMNS = [
   'tipo_doc', 'status_contratista', 'responsable',
 ];
 
+// RFI-specific fields (due date, response date, question text).
+const RFI_COLUMNS = ['fecha_vencimiento', 'fecha_respuesta', 'pregunta'];
 // Link columns settable via create/update (not part of the paste grid).
 const LINK_COLUMNS = ['claim_id', 'parent_id'];
 // Annotations set in the claim workspace (complementary per-line data).
 const ANNOTATION_COLUMNS = ['claim_note', 'claim_data'];
 const JSON_COLUMNS = ['claim_data'];
-const WRITE_COLUMNS = [...DOC_COLUMNS, ...LINK_COLUMNS, ...ANNOTATION_COLUMNS];
+const WRITE_COLUMNS = [...DOC_COLUMNS, ...RFI_COLUMNS, ...LINK_COLUMNS, ...ANNOTATION_COLUMNS];
 
 // A Cerrado claim no longer accepts documents. Rejects an attempt to link a
 // document to a closed claim; unlinking (claim_id null/empty) is always allowed.
