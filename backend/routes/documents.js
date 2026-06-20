@@ -124,6 +124,22 @@ function buildFields(body) {
   return { cols, placeholders, values, nextParam: p };
 }
 
+// When a document is linked to a claim, the claim inherits the document's
+// N° de contrato if the claim does not have one yet. Keeps a freshly created
+// claim aligned with the contract of the documents it groups, without ever
+// overwriting a contract already set on the claim.
+async function backfillClaimContract(doc) {
+  if (!doc || doc.claim_id == null) return;
+  const contrato = (doc.n_contrato || '').trim();
+  if (!contrato) return;
+  await pool.query(
+    `UPDATE claims
+       SET n_contrato = $1, updated_at = NOW()
+     WHERE id = $2 AND COALESCE(TRIM(n_contrato), '') = ''`,
+    [contrato, doc.claim_id]
+  );
+}
+
 // Crear documento
 router.post('/', async (req, res) => {
   try {
@@ -135,6 +151,7 @@ router.post('/', async (req, res) => {
     values.push(actorOrgId(req));
     const sql = `INSERT INTO documents (${cols.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
     const { rows } = await pool.query(sql, values);
+    await backfillClaimContract(rows[0]);
     res.status(201).json(rows[0]);
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
@@ -157,6 +174,7 @@ router.put('/:id', async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
+    await backfillClaimContract(rows[0]);
     res.json(rows[0]);
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
