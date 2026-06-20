@@ -56,6 +56,18 @@ router.post('/login', async (req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', requireAuth, (req, res) => res.json(publicUser(req.user)));
+router.get('/me', requireAuth, async (req, res) => {
+  const u = publicUser(req.user);
+  if (u.organization_id) {
+    try {
+      const { rows } = await pool.query(
+        'SELECT onedrive_base_url FROM organizations WHERE id = $1',
+        [u.organization_id]
+      );
+      u.onedrive_base_url = rows[0]?.onedrive_base_url || null;
+    } catch { /* no-op */ }
+  }
+  res.json(u);
+});
 
 module.exports = router;

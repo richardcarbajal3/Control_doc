@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 
 export default function OrgForm({ org, onSave, onCancel }) {
-  const [form, setForm] = useState({ name: '', plan: '', status: 'active' });
+  const [form, setForm] = useState({ name: '', plan: '', status: 'active', onedrive_base_url: '' });
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (org) setForm({ name: org.name || '', plan: org.plan || '', status: org.status || 'active' });
+    if (org) setForm({ name: org.name || '', plan: org.plan || '', status: org.status || 'active', onedrive_base_url: org.onedrive_base_url || '' });
   }, [org]);
 
   const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -39,6 +39,17 @@ export default function OrgForm({ org, onSave, onCancel }) {
                 <option value="suspended">suspended</option>
               </select>
             </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="onedrive_base_url">URL base OneDrive (opcional)</label>
+            <input
+              id="onedrive_base_url"
+              name="onedrive_base_url"
+              value={form.onedrive_base_url}
+              onChange={change}
+              placeholder="https://empresa-my.sharepoint.com/personal/.../Documents/Control doc"
+              style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
+            />
           </div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancelar</button>

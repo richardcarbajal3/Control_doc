@@ -1,4 +1,5 @@
 import { IMPORT_CONFIGS } from '../lib/importConfig';
+import { buildOnedriveUrl } from '../lib/onedriveUrl';
 
 const FIELDS = IMPORT_CONFIGS.documents.fields;
 
@@ -13,7 +14,12 @@ function formatValue(field, value) {
   return String(value);
 }
 
-export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [] }) {
+function abbrevText(text, n) {
+  if (!text || text.length <= n) return text;
+  return text.slice(0, n) + '…';
+}
+
+export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick, onedriveBaseUrl }) {
   if (documents.length === 0) {
     return (
       <div className="empty-state">
@@ -22,19 +28,24 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
     );
   }
 
-  // When draggable, each row can be dropped onto a claim in the side panel.
   const onRowDragStart = (e, doc) => {
     e.dataTransfer.setData('text/plain', String(doc.id));
     e.dataTransfer.effectAllowed = 'link';
   };
 
   return (
-    <div className="table-container">
+    <div className="doc-table-scroll">
       <table className="doc-table">
+        <colgroup>
+          {FIELDS.map((f) => (
+            <col key={f.key} style={f.colWidth ? { width: `${f.colWidth}px` } : {}} />
+          ))}
+          <col style={{ width: '130px' }} />
+        </colgroup>
         <thead>
           <tr>
             {FIELDS.map((f) => (
-              <th key={f.key}>{f.label}</th>
+              <th key={f.key} title={f.label}>{f.label}</th>
             ))}
             <th>Acciones</th>
           </tr>
@@ -45,28 +56,44 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
               key={doc.id}
               className={[
                 draggable ? 'doc-row-draggable' : '',
-                doc.claim_id != null && highlightClaimIds.includes(doc.claim_id) ? 'doc-row-highlight' : '',
+                onRowClick ? 'doc-row-clickable' : '',
+                Array.isArray(doc.claim_ids) && doc.claim_ids.some((id) => highlightClaimIds.includes(id)) ? 'doc-row-highlight' : '',
               ].filter(Boolean).join(' ')}
               draggable={draggable || undefined}
               onDragStart={draggable ? (e) => onRowDragStart(e, doc) : undefined}
+              onClick={onRowClick ? () => onRowClick(doc) : undefined}
             >
               {FIELDS.map((f) => {
                 const text = formatValue(f, doc[f.key]);
+                const display = f.abbrev ? abbrevText(text, f.abbrev) : text;
                 const cls = [
                   f.key === 'n_contrato' || f.key === 'documento_nro' ? 'code-cell' : '',
-                  f.type === 'textarea' ? 'cell-truncate' : '',
-                ].filter(Boolean).join(' ');
+                  f.key === 'transmittal' ? 'transmittal-cell' : '',
+                  f.rtl ? 'cell-rtl' : '',
+                ].filter(Boolean).join(' ') || undefined;
                 return (
                   <td key={f.key} className={cls} title={text}>
-                    {text}
+                    {f.rtl ? <span dir="ltr">{display}</span> : display}
                   </td>
                 );
               })}
               <td className="actions-cell">
-                <button className="btn btn-small btn-edit" onClick={() => onEdit(doc)}>
+                {onedriveBaseUrl && doc.n_contrato && (
+                  <a
+                    href={doc.transmittal
+                      ? buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato, doc.status, doc.transmittal)
+                      : buildOnedriveUrl(onedriveBaseUrl, doc.n_contrato)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-small btn-secondary"
+                    title={doc.transmittal ? `Abrir carpeta: ${doc.transmittal}` : `Abrir carpeta contrato: ${doc.n_contrato}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >📁</a>
+                )}
+                <button className="btn btn-small btn-edit" onClick={(e) => { e.stopPropagation(); onEdit(doc); }}>
                   Editar
                 </button>
-                <button className="btn btn-small btn-delete" onClick={() => onDelete(doc)}>
+                <button className="btn btn-small btn-delete" onClick={(e) => { e.stopPropagation(); onDelete(doc); }}>
                   Eliminar
                 </button>
               </td>

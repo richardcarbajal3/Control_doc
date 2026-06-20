@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getClaim, updateClaim } from '../api/claims';
+import { getClaim, updateClaim, addDocToClaim, removeDocFromClaim } from '../api/claims';
 import { updateDocument } from '../api/documents';
 import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
 
@@ -33,14 +33,14 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
   const addDoc = async () => {
     if (!pick) return;
     setBusy(true); setError('');
-    try { await updateDocument(Number(pick), { claim_id: claim.id }); setPick(''); await load(); onChanged?.(); }
+    try { await addDocToClaim(claim.id, Number(pick)); setPick(''); await load(); onChanged?.(); }
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
 
   const removeDoc = async (id) => {
     setBusy(true); setError('');
-    try { await updateDocument(id, { claim_id: null }); await load(); onChanged?.(); }
+    try { await removeDocFromClaim(claim.id, id); await load(); onChanged?.(); }
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };

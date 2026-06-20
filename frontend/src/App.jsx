@@ -12,23 +12,26 @@ import ClaimList from './components/ClaimList';
 import ClaimForm from './components/ClaimForm';
 import ClaimDetail from './components/ClaimDetail';
 import ClaimDropPanel from './components/ClaimDropPanel';
+import DocumentDetail from './components/DocumentDetail';
 import ContractMembers from './components/ContractMembers';
 import UserList from './components/UserList';
 import UserForm from './components/UserForm';
 import OrgList from './components/OrgList';
 import OrgForm from './components/OrgForm';
+import OrgSettings from './components/OrgSettings';
 import AssignAdminForm from './components/AssignAdminForm';
 import Login from './components/Login';
 import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
 import { IMPORT_CONFIGS } from './lib/importConfig';
+import { useFloatingPanel } from './lib/useFloatingPanel';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
 import { getProjects, createProject, updateProject, deleteProject } from './api/projects';
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
-import { getClaims, createClaim, updateClaim, deleteClaim } from './api/claims';
+import { getClaims, createClaim, updateClaim, deleteClaim, addDocToClaim, removeDocFromClaim } from './api/claims';
 import { getUsers, createUser, updateUser, deleteUser } from './api/users';
 import {
   getOrganizations, createOrganization, updateOrganization, deleteOrganization, assignOrgAdmin,
@@ -124,11 +127,37 @@ function Dashboard({ currentUser, onLogout }) {
   const [editing, setEditing] = useState(null);
   const [claimDetail, setClaimDetail] = useState(null);
   const [claimMode, setClaimMode] = useState(false);
+  const [claimFloat, setClaimFloat] = useState(() => {
+    try { return localStorage.getItem('claimDock.float') === '1'; } catch { return false; }
+  });
+  const [claimMin, setClaimMin] = useState(() => {
+    try { return localStorage.getItem('claimDock.min') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('claimDock.float', claimFloat ? '1' : '0'); } catch { /* ignore */ }
+  }, [claimFloat]);
+  useEffect(() => {
+    try { localStorage.setItem('claimDock.min', claimMin ? '1' : '0'); } catch { /* ignore */ }
+  }, [claimMin]);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
-  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [showFilterHelp, setShowFilterHelp] = useState(() => {
+    try { return localStorage.getItem('docFilters.help') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('docFilters.help', showFilterHelp ? '1' : '0'); } catch { /* ignore */ }
+  }, [showFilterHelp]);
   const filtersRef = useRef(null);
+  const filtersPanel = useFloatingPanel('docFilters', { defaultPos: { x: 24, y: 132 }, enabled: showFilters });
+
+  // Auto-collapse the page header to a single line after 3s so the document
+  // list gets the maximum vertical space. The toggle button still works.
+  useEffect(() => {
+    const t = setTimeout(() => setHeaderCollapsed(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
 
   // Close the filters popover when clicking outside of it.
   useEffect(() => {
@@ -140,10 +169,13 @@ function Dashboard({ currentUser, onLogout }) {
     return () => document.removeEventListener('mousedown', onDown);
   }, [showFilters]);
   const [selectedClaimIds, setSelectedClaimIds] = useState([]);
+  const [docDetail, setDocDetail] = useState(null);
   const [claimView, setClaimView] = useState('highlight'); // highlight | related | unrelated
   const [rolesContract, setRolesContract] = useState(null);
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
+  const [showOrgSettings, setShowOrgSettings] = useState(false);
+  const [onedriveBaseUrl, setOnedriveBaseUrl] = useState(currentUser.onedrive_base_url || null);
 
   const docs = useModule(getDocuments);
   const claims = useModule(getClaims);
@@ -208,13 +240,13 @@ function Dashboard({ currentUser, onLogout }) {
 
   const linkDocToClaim = async (docId, claimId) => {
     setLinkBusy(true);
-    try { await updateDocument(docId, { claim_id: claimId }); docs.refresh(); claims.refresh(); }
+    try { await addDocToClaim(claimId, docId); docs.refresh(); claims.refresh(); }
     catch (err) { setDeleteError(err.message); }
     finally { setLinkBusy(false); }
   };
-  const unlinkDoc = async (docId) => {
+  const unlinkDoc = async (docId, claimId) => {
     setLinkBusy(true);
-    try { await updateDocument(docId, { claim_id: null }); docs.refresh(); claims.refresh(); }
+    try { await removeDocFromClaim(claimId, docId); docs.refresh(); claims.refresh(); }
     catch (err) { setDeleteError(err.message); }
     finally { setLinkBusy(false); }
   };
@@ -304,16 +336,26 @@ function Dashboard({ currentUser, onLogout }) {
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
+  // When the documents are filtered by contract, the claims panel follows suit:
+  // only claims belonging to the selected contract(s) remain visible.
+  const visibleClaims = useMemo(() => {
+    const contracts = docFilters.n_contrato;
+    if (!Array.isArray(contracts) || !contracts.length) return claims.items;
+    return claims.items.filter((c) => contracts.includes(String(c.n_contrato ?? '')));
+  }, [claims.items, docFilters.n_contrato]);
+
   // Claim-mode view: count related/unrelated among the currently visible docs,
   // and pick which subset the table shows depending on the chosen mode.
-  const relatedCount = useMemo(() => visibleDocs.filter((d) => d.claim_id != null).length, [visibleDocs]);
+  const hasClaim = (d) => Array.isArray(d.claim_ids) && d.claim_ids.length > 0;
+  const inSelected = (d) => Array.isArray(d.claim_ids) && d.claim_ids.some((id) => selectedClaimIds.includes(id));
+  const relatedCount = useMemo(() => visibleDocs.filter(hasClaim).length, [visibleDocs]);
   const unrelatedCount = visibleDocs.length - relatedCount;
   const claimViewDocs = useMemo(() => {
-    if (claimView === 'unrelated') return visibleDocs.filter((d) => d.claim_id == null);
+    if (claimView === 'unrelated') return visibleDocs.filter((d) => !hasClaim(d));
     if (claimView === 'related') {
-      const rel = visibleDocs.filter((d) => d.claim_id != null);
-      // Selecting one or more claims focuses the view on just those claims.
-      return selectedClaimIds.length ? rel.filter((d) => selectedClaimIds.includes(d.claim_id)) : rel;
+      const rel = visibleDocs.filter(hasClaim);
+      // Selecting one or more claims focuses the view on just those claims (union).
+      return selectedClaimIds.length ? rel.filter(inSelected) : rel;
     }
     return visibleDocs;
   }, [visibleDocs, claimView, selectedClaimIds]);
@@ -326,7 +368,7 @@ function Dashboard({ currentUser, onLogout }) {
   };
 
   return (
-    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''}`}>
+    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''} ${claimMode && claimFloat ? 'claim-floating' : ''} ${claimMode && claimMin ? 'claim-min' : ''} ${headerCollapsed ? 'header-collapsed-app' : ''}`}>
       <header className={`header ${headerCollapsed ? 'header-collapsed' : ''}`}>
         <div className="header-title">
           <button
@@ -344,6 +386,15 @@ function Dashboard({ currentUser, onLogout }) {
         <div className="user-box">
           <span className="user-email">{currentUser.email}</span>
           <span className="user-role">{currentUser.role}</span>
+          {isAdmin && !isOwner && (
+            <button
+              className="btn btn-secondary btn-small"
+              onClick={() => setShowOrgSettings(true)}
+              title="Configurar integración OneDrive"
+            >
+              📁 OneDrive
+            </button>
+          )}
           <button className="btn btn-secondary btn-small" onClick={onLogout}>Salir</button>
         </div>
       </header>
@@ -353,14 +404,14 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
         ))}
       </nav>
 
-      <main className="main">
+      <main className={`main${tab === 'documents' ? ' main-full' : ''}`}>
         {tab === 'presentation' ? (
           <PresentationReport />
         ) : tab === 'report' ? (
@@ -385,30 +436,51 @@ function Dashboard({ currentUser, onLogout }) {
                     ⚙ Filtros{activeFilterCount ? ` (${activeFilterCount})` : ''}
                   </button>
                   {showFilters && (
-                    <div className="filters-popover">
-                      <div className="filters-popover-head">
-                        <span className="doc-filters-hint">Ctrl+clic para elegir varios o quitar</span>
-                        {anyDocFilter && (
-                          <button className="chip" onClick={() => setDocFilters({})}>Limpiar</button>
-                        )}
-                        <button className="chip" onClick={() => setShowFilters(false)}>✕</button>
+                    <div
+                      className="filters-popover filters-popover--float"
+                      ref={filtersPanel.panelRef}
+                      style={filtersPanel.style}
+                    >
+                      <div className="filters-popover-bar" onPointerDown={filtersPanel.onDragStart}>
+                        <span className="filters-popover-title">
+                          <span className="claim-dock-grip" aria-hidden="true">⠿</span>
+                          Filtros{activeFilterCount ? ` (${activeFilterCount})` : ''}
+                        </span>
+                        <span className="filters-popover-ctls">
+                          {anyDocFilter && (
+                            <button className="chip" onClick={() => setDocFilters({})}>Limpiar</button>
+                          )}
+                          <button
+                            className={`dock-ctl ${showFilterHelp ? 'dock-ctl-on' : ''}`}
+                            title={showFilterHelp ? 'Ocultar ayuda' : 'Mostrar ayuda'}
+                            onClick={() => setShowFilterHelp((v) => !v)}
+                          >
+                            ?
+                          </button>
+                          <button className="dock-ctl" title="Cerrar" onClick={() => setShowFilters(false)}>✕</button>
+                        </span>
                       </div>
-                      <div className="report-filters doc-filters">
-                        {DOC_FILTER_FIELDS.map((f) => (
-                          <label key={f.key} className="report-filter">
-                            <span>{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
-                            <select
-                              multiple
-                              size={5}
-                              value={docFilters[f.key] || []}
-                              onChange={(e) =>
-                                setDocFilters((s) => ({ ...s, [f.key]: Array.from(e.target.selectedOptions, (o) => o.value) }))
-                              }
-                            >
-                              {docFilterOptions[f.key].map((v) => <option key={v} value={v}>{v}</option>)}
-                            </select>
-                          </label>
-                        ))}
+                      <div className="filters-popover-body">
+                        {showFilterHelp && (
+                          <div className="doc-filters-hint">Ctrl+clic para elegir varios o quitar</div>
+                        )}
+                        <div className="report-filters doc-filters">
+                          {DOC_FILTER_FIELDS.map((f) => (
+                            <label key={f.key} className="report-filter">
+                              <span>{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
+                              <select
+                                multiple
+                                size={5}
+                                value={docFilters[f.key] || []}
+                                onChange={(e) =>
+                                  setDocFilters((s) => ({ ...s, [f.key]: Array.from(e.target.selectedOptions, (o) => o.value) }))
+                                }
+                              >
+                                {docFilterOptions[f.key].map((v) => <option key={v} value={v}>{v}</option>)}
+                              </select>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -454,11 +526,13 @@ function Dashboard({ currentUser, onLogout }) {
                           onDelete={handleDeleteDoc}
                           draggable
                           highlightClaimIds={claimView === 'highlight' ? selectedClaimIds : []}
+                          onRowClick={setDocDetail}
+                          onedriveBaseUrl={onedriveBaseUrl}
                         />
                       </div>
                       <ClaimDropPanel
                         documents={visibleDocs}
-                        claims={claims.items}
+                        claims={visibleClaims}
                         onAssign={linkDocToClaim}
                         onUnassign={unlinkDoc}
                         onCreateClaim={handleCreateClaimInline}
@@ -470,10 +544,14 @@ function Dashboard({ currentUser, onLogout }) {
                         relatedCount={relatedCount}
                         unrelatedCount={unrelatedCount}
                         busy={linkBusy}
+                        floating={claimFloat}
+                        onToggleFloat={() => setClaimFloat((v) => !v)}
+                        minimized={claimMin}
+                        onToggleMinimize={() => setClaimMin((v) => !v)}
                       />
                     </div>
                   ) : (
-                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} />
+                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} onRowClick={setDocDetail} onedriveBaseUrl={onedriveBaseUrl} />
                   )
                 )}
                 {tab === 'claims' && (
@@ -496,6 +574,7 @@ function Dashboard({ currentUser, onLogout }) {
                     onEdit={openEdit}
                     onDelete={handleDeleteContract}
                     onManageRoles={isAdmin ? setRolesContract : undefined}
+                    onedriveBaseUrl={onedriveBaseUrl}
                   />
                 )}
                 {tab === 'users' && (
@@ -585,8 +664,26 @@ function Dashboard({ currentUser, onLogout }) {
         />
       )}
 
+      {docDetail && (
+        <DocumentDetail
+          doc={docDetail}
+          allDocuments={docs.items}
+          claims={claims.items}
+          onClose={() => setDocDetail(null)}
+          onedriveBaseUrl={onedriveBaseUrl}
+        />
+      )}
+
       {rolesContract && (
         <ContractMembers contract={rolesContract} onClose={() => setRolesContract(null)} />
+      )}
+
+      {showOrgSettings && (
+        <OrgSettings
+          currentValue={onedriveBaseUrl}
+          onSaved={(url) => { setOnedriveBaseUrl(url); setShowOrgSettings(false); }}
+          onCancel={() => setShowOrgSettings(false)}
+        />
       )}
     </div>
   );

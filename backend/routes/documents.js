@@ -62,7 +62,9 @@ router.get('/', async (req, res) => {
       conds.push(`(documento_nro ILIKE $${s} OR descripcion ILIKE $${s}
                  OR n_contrato ILIKE $${s} OR empresa ILIKE $${s} OR transmittal ILIKE $${s})`);
     }
-    const query = `SELECT *, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso FROM documents`
+    const query = `SELECT *, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso,
+        COALESCE((SELECT array_agg(cd.claim_id) FROM claim_documents cd WHERE cd.document_id = documents.id), ARRAY[]::int[]) AS claim_ids
+      FROM documents`
       + (conds.length ? ' WHERE ' + conds.join(' AND ') : '')
       + ' ORDER BY fecha ASC NULLS LAST, transmittal ASC NULLS LAST, id ASC';
     const { rows } = await pool.query(query, params);
@@ -124,19 +126,33 @@ function buildFields(body) {
   return { cols, placeholders, values, nextParam: p };
 }
 
-// When a document is linked to a claim, the claim inherits the document's
-// N° de contrato if the claim does not have one yet. Keeps a freshly created
-// claim aligned with the contract of the documents it groups, without ever
-// overwriting a contract already set on the claim.
-async function backfillClaimContract(doc) {
-  if (!doc || doc.claim_id == null) return;
-  const contrato = (doc.n_contrato || '').trim();
-  if (!contrato) return;
+// Mirror a form's claim_id into the M2M membership (add-only: never removes the
+// document from other claims). Membership is the source of truth for linking.
+// When linking, the claim inherits the document's N° de contrato if it has none
+// yet, without ever overwriting a contract already set on the claim.
+async function addClaimMembership(req, documentId) {
+  const raw = req.body.claim_id;
+  if (raw == null || raw === '') return;
+  const claimId = parseInt(raw, 10);
+  if (!Number.isFinite(claimId)) return;
   await pool.query(
-    `UPDATE claims
-       SET n_contrato = $1, updated_at = NOW()
-     WHERE id = $2 AND COALESCE(TRIM(n_contrato), '') = ''`,
-    [contrato, doc.claim_id]
+    `INSERT INTO claim_documents (claim_id, document_id, organization_id)
+     VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+    [claimId, documentId, actorOrgId(req)]
+  );
+  await inheritClaimContract(claimId, documentId);
+}
+
+// If the claim has no contract yet, inherit it from the linked document.
+async function inheritClaimContract(claimId, documentId) {
+  await pool.query(
+    `UPDATE claims c
+        SET n_contrato = d.n_contrato, updated_at = NOW()
+       FROM documents d
+      WHERE c.id = $1 AND d.id = $2
+        AND COALESCE(TRIM(c.n_contrato), '') = ''
+        AND COALESCE(TRIM(d.n_contrato), '') <> ''`,
+    [claimId, documentId]
   );
 }
 
@@ -151,7 +167,7 @@ router.post('/', async (req, res) => {
     values.push(actorOrgId(req));
     const sql = `INSERT INTO documents (${cols.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
     const { rows } = await pool.query(sql, values);
-    await backfillClaimContract(rows[0]);
+    await addClaimMembership(req, rows[0].id);
     res.status(201).json(rows[0]);
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
@@ -174,7 +190,7 @@ router.put('/:id', async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
-    await backfillClaimContract(rows[0]);
+    await addClaimMembership(req, rows[0].id);
     res.json(rows[0]);
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });

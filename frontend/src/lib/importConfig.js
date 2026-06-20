@@ -7,23 +7,25 @@ export const IMPORT_CONFIGS = {
     fields: [
       // STATUS y STATUS G son del TRANSMITTAL (no del documento): STATUS = sentido
       // del envío (enviado/recibido); STATUS G = atención (atendido/pendiente).
-      { key: 'status', label: 'STATUS', options: ['ENVIADO', 'RECIBIDO'] },
-      { key: 'status_g', label: 'STATUS G', options: ['ATENDIDO', 'PENDIENTE'] },
-      { key: 'n_contrato', label: 'N° CONTRATO' },
-      { key: 'empresa', label: 'EMPRESA' },
-      { key: 'contrato', label: 'CONTRATO' },
-      { key: 'descripcion_contrato', label: 'DESCRIPCIÓN CONTRATO', type: 'textarea' },
-      { key: 'fecha', label: 'FECHA', type: 'date' },
-      { key: 'transmittal', label: '# TRANSMITTAL' },
-      { key: 'referencia', label: 'REFERENCIA' },
-      { key: 'documento_nro', label: 'DOCUMENTO NRO' },
-      { key: 'rev', label: 'REV.' },
-      { key: 'descripcion', label: 'DESCRIPCIÓN', type: 'textarea' },
-      { key: 'tipo_doc', label: 'TIPO DE DOC' },
+      { key: 'status', label: 'STATUS', options: ['ENVIADO', 'RECIBIDO'], colWidth: 52 },
+      { key: 'status_g', label: 'STATUS G', options: ['ATENDIDO', 'PENDIENTE'], colWidth: 52 },
+      { key: 'n_contrato', label: 'N° CONTRATO', colWidth: 100 },
+      { key: 'empresa', label: 'EMPRESA', colWidth: 52 },
+      // abbrev: 4 — muestra solo las primeras 4 letras en la tabla; texto completo al hover
+      { key: 'contrato', label: 'CONTRATO', colWidth: 80, abbrev: 4 },
+      { key: 'descripcion_contrato', label: 'DESCRIPCIÓN CONTRATO', type: 'textarea', colWidth: 108 },
+      { key: 'fecha', label: 'FECHA', type: 'date', colWidth: 86 },
+      // rtl:true → muestra el FINAL del nro de transmittal (la parte más discriminante)
+      { key: 'transmittal', label: '# TRANSMITTAL', colWidth: 108, rtl: true },
+      { key: 'referencia', label: 'REFERENCIA', colWidth: 88 },
+      { key: 'documento_nro', label: 'DOCUMENTO NRO', colWidth: 132 },
+      { key: 'rev', label: 'REV.', colWidth: 46 },
+      { key: 'descripcion', label: 'DESCRIPCIÓN', type: 'textarea', colWidth: 190 },
+      { key: 'tipo_doc', label: 'TIPO DE DOC', colWidth: 52 },
       // STATUS DE CONTRATISTA es el estado del DOCUMENTO en sí (revisión técnica).
       { key: 'status_contratista', label: 'STATUS DE CONTRATISTA',
-        options: ['APROBADO', 'EN REVISIÓN', 'CON OBSERVACIONES', 'ANULADO'] },
-      { key: 'responsable', label: 'RESPONSABLE' },
+        options: ['APROBADO', 'EN REVISIÓN', 'CON OBSERVACIONES', 'ANULADO'], colWidth: 100 },
+      { key: 'responsable', label: 'RESPONSABLE', colWidth: 68 },
     ],
   },
   companies: {
