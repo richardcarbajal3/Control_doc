@@ -238,6 +238,44 @@ SELECT claim_id, id, organization_id FROM documents WHERE claim_id IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 -- =========================================================================
+-- RFI fields on documents: due date, response date, and the question text.
+-- Additive and idempotent.
+-- =========================================================================
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS fecha_vencimiento DATE;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS fecha_respuesta DATE;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS pregunta TEXT;
+
+-- =========================================================================
+-- Change Orders (Órdenes de Cambio / OC).
+-- Each OC tracks a scope/cost change against a contract, with its own
+-- status lifecycle and supporting documents drawn from the documents table.
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS change_orders (
+  id SERIAL PRIMARY KEY,
+  code VARCHAR(50),
+  n_contrato VARCHAR(120),
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  monto_solicitado NUMERIC(18,2),
+  monto_aprobado NUMERIC(18,2),
+  currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+  status VARCHAR(40) NOT NULL DEFAULT 'Borrador',
+  organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+  extra_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Many-to-many: an OC is supported by documents from the documents table.
+CREATE TABLE IF NOT EXISTS change_order_documents (
+  change_order_id INTEGER NOT NULL REFERENCES change_orders(id) ON DELETE CASCADE,
+  document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (change_order_id, document_id)
+);
+
+-- =========================================================================
 -- Document classification rules: two-pass classification (code first, then
 -- keywords). source = 'codigo' matches against documento_nro; 'descripcion'
 -- matches against the descripcion field. Lower priority number = runs first.

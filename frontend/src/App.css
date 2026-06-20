@@ -1412,6 +1412,37 @@ tr:hover {
 .claim-view-modes button.active { background: #1e3a5f; color: #fff; font-weight: 600; }
 
 /* ── Document detail (ficha del transmittal) ────────────────────────── */
+/* ── Floating claim detail panel (opened from ClaimDropPanel without tab change) ── */
+.claim-detail-float {
+  position: fixed;
+  z-index: 65;
+  background: #fff;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.22);
+  width: 680px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  resize: both;
+  overflow: hidden;
+}
+.claim-detail-float-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem 1rem 0.9rem;
+  min-height: 0;
+}
+.claim-detail-float .claim-dock-bar { border-bottom: 1px solid #e2e8f0; }
+.dock-ctl-detail {
+  font-size: 0.78rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  color: #1e3a5f;
+}
+.dock-ctl-detail:hover { background: #dbeafe; color: #1d4ed8; }
+
 .doc-row-clickable { cursor: pointer; }
 .ficha-grid {
   display: grid;
@@ -1426,3 +1457,135 @@ tr:hover {
 }
 .ficha-value { font-size: 0.9rem; color: #1f2937; }
 .ficha-desc { font-size: 0.88rem; color: #374151; margin: 0.4rem 0 0.75rem; }
+
+/* ── RFI Panel ────────────────────────────────────────────────────────── */
+.rfi-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 1.25rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.rfi-step {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 2px solid #e2e8f0;
+  color: #94a3b8;
+  background: #fff;
+}
+.rfi-step-done {
+  border-color: #22c55e;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+.rfi-step-late {
+  border-color: #ef4444;
+  color: #dc2626;
+  background: #fef2f2;
+}
+.rfi-step-pending {
+  border-color: #f59e0b;
+  color: #d97706;
+  background: #fffbeb;
+}
+.rfi-arrow {
+  color: #cbd5e1;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* pill extras */
+.pill-info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.pill-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ── Claim Timeline ───────────────────────────────────────────────────── */
+.claim-timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.claim-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.55rem;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 2px;
+  background: #e2e8f0;
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.1rem;
+}
+.timeline-item.timeline-last { margin-bottom: 0; }
+.timeline-dot {
+  position: absolute;
+  left: -1.07rem;
+  top: 0.45rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e3a5f;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #1e3a5f;
+}
+.timeline-content {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+}
+.timeline-date {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+.timeline-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1e3a5f;
+  margin-bottom: 0.2rem;
+}
+.timeline-icon { font-size: 1rem; }
+.timeline-desc {
+  font-size: 0.82rem;
+  color: #374151;
+  margin-bottom: 0.3rem;
+}
+.timeline-note {
+  font-size: 0.78rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-bottom: 0.3rem;
+}
+.timeline-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.timeline-resp {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* ── View toggle (timeline / table) ──────────────────────────────────── */
+.view-toggle {
+  display: flex;
+  gap: 0.25rem;
+}
