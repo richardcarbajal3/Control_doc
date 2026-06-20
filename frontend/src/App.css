@@ -1100,6 +1100,30 @@ tr:hover {
   min-height: 0;
   overflow: auto;
   width: 100%;
+  /* Keep both scrollbars permanently visible so horizontal scrolling is
+     always discoverable, even where the OS uses auto-hiding overlay bars. */
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #eef2f7;
+  scrollbar-gutter: stable;
+}
+.doc-table-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.doc-table-scroll::-webkit-scrollbar-track {
+  background: #eef2f7;
+  border-radius: 8px;
+}
+.doc-table-scroll::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border: 3px solid #eef2f7;
+  border-radius: 8px;
+}
+.doc-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+.doc-table-scroll::-webkit-scrollbar-corner {
+  background: #eef2f7;
 }
 .app.header-collapsed-app .doc-table-scroll {
   max-height: none;
@@ -1164,15 +1188,19 @@ tr:hover {
 .toolbar-sticky .toolbar { margin-bottom: 0.5rem; }
 .toolbar-sticky .report-filters { margin-bottom: 0.5rem; }
 
-/* Uniform filter boxes. */
-.doc-filters .report-filter { width: 156px; }
+/* Uniform filter boxes that flex to fill the panel and can be resized in
+   either direction (grow down AND sideways) so users maximise the space. */
+.doc-filters .report-filter {
+  flex: 1 1 156px; min-width: 156px; max-width: 100%;
+}
 .doc-filters .report-filter > span {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   font-weight: 600;
 }
 .doc-filters .report-filter select[multiple] {
-  width: 100%; min-width: 0; height: 88px;
-  resize: vertical; overflow: auto; min-height: 56px; max-height: 320px;
+  width: 100%; min-width: 156px; height: 88px;
+  resize: both; overflow: auto;
+  min-height: 56px; max-height: 320px; max-width: 100%;
 }
 
 /* ── Claims dock as a fixed floating panel (always visible when active) ── */
@@ -1208,7 +1236,7 @@ tr:hover {
   padding: 0.45rem 0.6rem 0.45rem 0.8rem;
   border-bottom: 1px solid var(--color-border-soft);
   background: #f1f5f9;
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   user-select: none;
 }
 .claim-dock-bar-title {
@@ -1237,7 +1265,7 @@ tr:hover {
   overflow: hidden;
   display: flex; flex-direction: column;
   border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: 0 12px 32px rgba(0,0,0,0.22);
   z-index: 60;
   resize: both;
@@ -1247,7 +1275,7 @@ tr:hover {
 /* Minimized: only the title bar remains. */
 .claims-dock.claims-dock--min { resize: none; }
 .claims-dock.claims-dock--min .claim-dock-body { display: none; }
-.claims-dock.claims-dock--min .claim-dock-bar { margin-bottom: -0.7rem; border-bottom: none; border-radius: 8px; }
+.claims-dock.claims-dock--min .claim-dock-bar { margin-bottom: -0.7rem; border-bottom: none; border-radius: var(--radius-lg); }
 
 /* Floating mode reclaims the space the docked panel reserved → full-width table. */
 .app.claim-active.claim-floating .header { padding-right: 2rem; }
