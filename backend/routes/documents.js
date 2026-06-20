@@ -128,6 +128,8 @@ function buildFields(body) {
 
 // Mirror a form's claim_id into the M2M membership (add-only: never removes the
 // document from other claims). Membership is the source of truth for linking.
+// When linking, the claim inherits the document's N° de contrato if it has none
+// yet, without ever overwriting a contract already set on the claim.
 async function addClaimMembership(req, documentId) {
   const raw = req.body.claim_id;
   if (raw == null || raw === '') return;
@@ -137,6 +139,20 @@ async function addClaimMembership(req, documentId) {
     `INSERT INTO claim_documents (claim_id, document_id, organization_id)
      VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
     [claimId, documentId, actorOrgId(req)]
+  );
+  await inheritClaimContract(claimId, documentId);
+}
+
+// If the claim has no contract yet, inherit it from the linked document.
+async function inheritClaimContract(claimId, documentId) {
+  await pool.query(
+    `UPDATE claims c
+        SET n_contrato = d.n_contrato, updated_at = NOW()
+       FROM documents d
+      WHERE c.id = $1 AND d.id = $2
+        AND COALESCE(TRIM(c.n_contrato), '') = ''
+        AND COALESCE(TRIM(d.n_contrato), '') <> ''`,
+    [claimId, documentId]
   );
 }
 

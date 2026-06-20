@@ -143,6 +143,17 @@ router.post('/:id/documents', async (req, res) => {
        VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
       [req.params.id, docId, actorOrgId(req)]
     );
+    // The claim inherits the document's contract if it has none yet; never
+    // overwrites a contract already set on the claim.
+    await pool.query(
+      `UPDATE claims c
+          SET n_contrato = d.n_contrato, updated_at = NOW()
+         FROM documents d
+        WHERE c.id = $1 AND d.id = $2
+          AND COALESCE(TRIM(c.n_contrato), '') = ''
+          AND COALESCE(TRIM(d.n_contrato), '') <> ''`,
+      [req.params.id, docId]
+    );
     res.status(201).json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
