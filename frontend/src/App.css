@@ -24,8 +24,8 @@
   --shadow-lg: 0 10px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08);
 
   --tap-target: 44px;
-  --header-height: 64px;
-  --tabs-height: 48px;
+  --header-height: 56px;
+  --tabs-height: 42px;
 }
 
 * {
@@ -136,8 +136,8 @@ body {
 /* Toolbar */
 .toolbar {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -145,14 +145,14 @@ body {
 .search-input {
   flex: 1;
   min-width: 0;
-  padding: 0.625rem 1rem;
+  padding: 0.45rem 0.85rem;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   background: white;
-  min-height: var(--tap-target);
+  min-height: 36px;
 }
 
 .search-input:focus {
@@ -165,12 +165,12 @@ body {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.84rem;
   font-weight: 500;
-  padding: 0.625rem 1.25rem;
+  padding: 0.45rem 0.95rem;
   transition: background 0.18s, opacity 0.18s, transform 0.12s, box-shadow 0.18s;
   white-space: nowrap;
-  min-height: var(--tap-target);
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -232,6 +232,12 @@ body {
 
 .btn-delete:hover {
   background: #fee2e2;
+}
+
+/* On touch screens keep comfortable tap targets despite the compact desktop sizing. */
+@media (max-width: 640px) {
+  .btn { min-height: 42px; padding: 0.55rem 1.05rem; }
+  .search-input { min-height: 42px; padding: 0.55rem 0.9rem; }
 }
 
 /* Table */
@@ -1070,12 +1076,12 @@ tr:hover {
    La tabla usa width:100% + min-width para ocupar todo el espacio disponible;
    el scroll horizontal aparece automáticamente cuando el viewport es más angosto. */
 .doc-table-scroll {
-  max-height: calc(100vh - 12.5rem);
+  max-height: calc(100vh - 11rem);
   overflow: auto;
   width: 100%;
 }
 .app.header-collapsed-app .doc-table-scroll {
-  max-height: calc(100vh - 9.5rem);
+  max-height: calc(100vh - 8.5rem);
 }
 .doc-table thead th {
   position: sticky;
@@ -1093,17 +1099,29 @@ tr:hover {
   letter-spacing: 0.01em;
 }
 
+/* Densidad + acabado moderno de la tabla de documentos. */
+.doc-table th, .doc-table td { padding: 0.3rem 0.55rem; }
+.doc-table thead th {
+  background: #f1f5f9;
+  font-size: 0.68rem;
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: inset 0 -1px 0 #cbd5e1;
+}
+.doc-table tbody tr:nth-child(even) td { background: #fafbfc; }
+.doc-table tbody tr:hover td { background: #eef4fb; }
+.doc-table tbody td { font-size: 0.82rem; }
+
 /* Toolbar + filters stay fixed while the list scrolls. */
 .toolbar-sticky {
   position: sticky;
   top: 0;
   z-index: 30;
   background: var(--color-bg);
-  padding-top: 0.75rem;
-  margin-bottom: 0.5rem;
+  padding-top: 0.6rem;
+  margin-bottom: 0.4rem;
   box-shadow: 0 4px 10px -4px rgba(0,0,0,0.12);
 }
-.toolbar-sticky .toolbar { margin-bottom: 0.75rem; }
+.toolbar-sticky .toolbar { margin-bottom: 0.5rem; }
 .toolbar-sticky .report-filters { margin-bottom: 0.5rem; }
 
 /* Uniform filter boxes. */
@@ -1274,10 +1292,11 @@ tr:hover {
 }
 
 /* ── Highlight a claim's documents when its card is selected ─────────── */
-.doc-table tr.doc-row-highlight td {
+.doc-table tbody tr.doc-row-highlight td,
+.doc-table tbody tr.doc-row-highlight:hover td {
   background: #fef3c7;
 }
-.doc-table tr.doc-row-highlight td:first-child {
+.doc-table tbody tr.doc-row-highlight td:first-child {
   box-shadow: inset 4px 0 0 #f59e0b;
 }
 .claim-drop-card.claim-selected {
