@@ -1197,6 +1197,22 @@ tr:hover {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   font-weight: 600;
 }
+/* Header row of each filter: drag grip + label. */
+.doc-filters .report-filter-head {
+  display: flex; align-items: center; gap: 0.3rem; min-width: 0;
+}
+.doc-filters .report-filter-head .filter-label-text {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.filter-grip {
+  cursor: grab; color: #94a3b8; font-size: 0.85rem; line-height: 1;
+  flex-shrink: 0; user-select: none; padding: 0 0.1rem;
+}
+.filter-grip:active { cursor: grabbing; }
+.report-filter.filter-dragging { opacity: 0.45; }
+.report-filter.filter-drop-over {
+  outline: 2px dashed var(--color-accent); outline-offset: 2px; border-radius: 6px;
+}
 .doc-filters .report-filter select[multiple] {
   width: 100%; min-width: 156px; height: 88px;
   resize: both; overflow: auto;
