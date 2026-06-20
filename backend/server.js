@@ -16,6 +16,7 @@ const organizationsRouter = require('./routes/organizations');
 const contractMembersRouter = require('./routes/contractMembers');
 const settingsRouter = require('./routes/settings');
 const changeOrdersRouter = require('./routes/changeOrders');
+const classificationRulesRouter = require('./routes/classificationRules');
 const { requireAuth, requireOrgAccess } = require('./middleware/auth');
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/api/contracts', requireAuth, requireOrgAccess, contractsRouter);
 app.use('/api/claims', requireAuth, requireOrgAccess, claimsRouter);
 app.use('/api/change-orders', requireAuth, requireOrgAccess, changeOrdersRouter);
 app.use('/api/reports', requireAuth, requireOrgAccess, reportsRouter);
+app.use('/api/classification-rules', requireAuth, requireOrgAccess, classificationRulesRouter);
 
 // Servir frontend compilado en producción
 const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');

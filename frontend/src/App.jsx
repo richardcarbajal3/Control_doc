@@ -28,8 +28,10 @@ import RFIPanel from './components/RFIPanel';
 import ChangeOrderList from './components/ChangeOrderList';
 import ChangeOrderForm from './components/ChangeOrderForm';
 import ChangeOrderDetail from './components/ChangeOrderDetail';
+import ClassificationRules from './components/ClassificationRules';
 import { IMPORT_CONFIGS } from './lib/importConfig';
 import { useFloatingPanel } from './lib/useFloatingPanel';
+import { applyClassification } from './lib/classify';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
@@ -43,6 +45,7 @@ import {
 } from './api/organizations';
 import { getMe, logout } from './api/auth';
 import { getToken } from './api/http';
+import { getRules } from './api/classificationRules';
 
 const BASE_TABS = [
   { key: 'documents', label: 'Documentos' },
@@ -198,6 +201,12 @@ function Dashboard({ currentUser, onLogout }) {
   const [deleteError, setDeleteError] = useState('');
   const [showOrgSettings, setShowOrgSettings] = useState(false);
   const [onedriveBaseUrl, setOnedriveBaseUrl] = useState(currentUser.onedrive_base_url || null);
+  const [classificationRules, setClassificationRules] = useState([]);
+  const [showClassification, setShowClassification] = useState(false);
+
+  useEffect(() => {
+    getRules().then(setClassificationRules).catch(() => {});
+  }, []);
 
   const docs = useModule(getDocuments);
   const claims = useModule(getClaims);
@@ -349,9 +358,16 @@ function Dashboard({ currentUser, onLogout }) {
 
   const handleImported = () => { activeModule?.refresh(); };
 
+  // Documents with virtual `familia` field derived from classification rules.
+  const docsWithFamilia = useMemo(
+    () => applyClassification(docs.items, classificationRules),
+    [docs.items, classificationRules]
+  );
+
   // Quick filters for the Documents tab. Each is a dropdown built from the
   // distinct values present, so the user can narrow the register fast.
   const DOC_FILTER_FIELDS = [
+    { key: 'familia', label: 'FAMILIA' },
     { key: 'n_contrato', label: 'Contrato' },
     { key: 'status', label: 'STATUS' },
     { key: 'status_g', label: 'STATUS G' },
@@ -386,19 +402,19 @@ function Dashboard({ currentUser, onLogout }) {
   const docFilterOptions = useMemo(() => {
     const opts = {};
     for (const f of DOC_FILTER_FIELDS) {
-      opts[f.key] = [...new Set(docs.items.map((d) => d[f.key]).filter((v) => v != null && v !== ''))]
+      opts[f.key] = [...new Set(docsWithFamilia.map((d) => d[f.key]).filter((v) => v != null && v !== ''))]
         .sort((a, b) => String(a).localeCompare(String(b), 'es'));
     }
     return opts;
-  }, [docs.items]);
+  }, [docsWithFamilia]);
   // docFilters maps field -> array of selected values (multi-select). A field
   // with selections keeps docs whose value is any of them; fields combine (AND).
   const visibleDocs = useMemo(() => {
     const active = Object.entries(docFilters).filter(([, v]) => Array.isArray(v) && v.length);
     return active.length
-      ? docs.items.filter((d) => active.every(([k, vals]) => vals.includes(String(d[k] ?? ''))))
-      : docs.items;
-  }, [docs.items, docFilters]);
+      ? docsWithFamilia.filter((d) => active.every(([k, vals]) => vals.includes(String(d[k] ?? ''))))
+      : docsWithFamilia;
+  }, [docsWithFamilia, docFilters]);
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
@@ -575,6 +591,15 @@ function Dashboard({ currentUser, onLogout }) {
                     </div>
                   )}
                 </div>
+              )}
+              {tab === 'documents' && isAdmin && (
+                <button
+                  className={`btn btn-secondary`}
+                  onClick={() => setShowClassification(true)}
+                  title="Reglas de clasificación de documentos por familia"
+                >
+                  🗂 Clasificación
+                </button>
               )}
               {tab === 'documents' && (
                 <button
@@ -802,6 +827,13 @@ function Dashboard({ currentUser, onLogout }) {
           currentValue={onedriveBaseUrl}
           onSaved={(url) => { setOnedriveBaseUrl(url); setShowOrgSettings(false); }}
           onCancel={() => setShowOrgSettings(false)}
+        />
+      )}
+
+      {showClassification && (
+        <ClassificationRules
+          onClose={() => setShowClassification(false)}
+          onChange={() => getRules().then(setClassificationRules).catch(() => {})}
         />
       )}
     </div>
