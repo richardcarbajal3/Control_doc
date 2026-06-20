@@ -141,7 +141,7 @@ function Dashboard({ currentUser, onLogout }) {
   }, [claimMin]);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
-  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showFilterHelp, setShowFilterHelp] = useState(() => {
     try { return localStorage.getItem('docFilters.help') === '1'; } catch { return false; }
