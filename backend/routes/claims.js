@@ -175,4 +175,54 @@ router.delete('/:id/documents/:docId', async (req, res) => {
   }
 });
 
+// Create a claim pre-populated from an RFI document's metadata and related docs.
+// The RFI's same-transmittal siblings and its parent chain are auto-linked.
+router.post('/from-rfi/:docId', async (req, res) => {
+  try {
+    const docParams = [req.params.docId];
+    let docQ = 'SELECT * FROM documents WHERE id = $1';
+    const docOc = orgCond(req, docParams, 'organization_id');
+    if (docOc) docQ += ` AND ${docOc}`;
+    const docRes = await pool.query(docQ, docParams);
+    if (!docRes.rows.length) return res.status(404).json({ error: 'RFI no encontrado' });
+    const rfi = docRes.rows[0];
+
+    const code = req.body.code || null;
+    const title = req.body.title || `Claim por RFI ${rfi.documento_nro || rfi.id}`;
+    const description = req.body.description ||
+      (rfi.pregunta ? `RFI: ${rfi.pregunta}` : `Generado desde ${rfi.documento_nro || `#${rfi.id}`}`);
+    const orgId = actorOrgId(req);
+
+    const claimRes = await pool.query(
+      `INSERT INTO claims (code, title, type, n_contrato, status, description, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [code, title, 'Demora', rfi.n_contrato || null, 'Abierto', description, orgId]
+    );
+    const claim = claimRes.rows[0];
+
+    // Auto-link: the RFI itself, its transmittal siblings, and parent/child chain
+    const orgFilter = orgId != null ? `AND organization_id = ${orgId}` : `AND organization_id IS NULL`;
+    const relatedRes = await pool.query(
+      `SELECT DISTINCT id FROM documents
+       WHERE (
+         id = $1
+         OR (transmittal IS NOT NULL AND transmittal = $2)
+         OR parent_id = $1
+         OR id = (SELECT parent_id FROM documents WHERE id = $1)
+       ) ${orgFilter}`,
+      [rfi.id, rfi.transmittal]
+    );
+    for (const row of relatedRes.rows) {
+      await pool.query(
+        `INSERT INTO claim_documents (claim_id, document_id, organization_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
+        [claim.id, row.id, orgId]
+      );
+    }
+
+    res.status(201).json(claim);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

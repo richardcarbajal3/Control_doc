@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getClaim, updateClaim, addDocToClaim, removeDocFromClaim } from '../api/claims';
 import { updateDocument } from '../api/documents';
 import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
+import ClaimTimeline from './ClaimTimeline';
 
 function fmtDate(v) {
   if (!v) return '';
@@ -81,6 +82,7 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
   };
 
   const docs = data?.documents || [];
+  const [view, setView] = useState('timeline'); // 'timeline' | 'table'
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -90,57 +92,71 @@ export default function ClaimDetail({ claim, allDocuments, onClose, onChanged })
           {data?.type} · Contrato {data?.n_contrato || '—'} · Estado {data?.status}
           {isClosed && <span className="pill pill-danger" style={{ marginLeft: '0.5rem' }}>Cerrado — no acepta más documentos</span>}
         </p>
+        {data?.description && <p className="ficha-desc">{data.description}</p>}
 
         {error && <div className="form-error">{error}</div>}
 
-        <h3 className="section-title">Documentos / cartas de soporte ({docs.length})</h3>
-        {docs.length === 0 ? (
-          <div className="empty-state"><p>Aún no hay documentos en este claim</p></div>
-        ) : (
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>DOCUMENTO NRO</th><th>DESCRIPCIÓN</th><th>FECHA</th>
-                  <th>STATUS G</th><th className="center">Atraso</th>
-                  {CLAIM_LINE_FIELDS.map((f) => <th key={f.key}>{f.label}</th>)}
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {docs.map((d) => (
-                  <tr key={d.id}>
-                    <td className="code-cell">{d.documento_nro}</td>
-                    <td>{d.descripcion}</td>
-                    <td>{fmtDate(d.fecha)}</td>
-                    <td>
-                      {d.is_pending
-                        ? <span className="pill pill-warn">{d.status_g || 'PENDIENTE'}</span>
-                        : <span className="pill pill-ok">{d.status_g}</span>}
-                    </td>
-                    <td className="center">{d.is_pending && d.dias_atraso > 0 ? `${d.dias_atraso} d` : '—'}</td>
-                    {CLAIM_LINE_FIELDS.map((f) => (
-                      <td key={f.key}>
-                        <input
-                          className="note-input"
-                          placeholder={f.label}
-                          value={(lineData[d.id]?.[f.key]) ?? ''}
-                          disabled={busy}
-                          onChange={(e) => setField(d.id, f.key, e.target.value)}
-                          onBlur={() => saveLine(d)}
-                        />
-                      </td>
-                    ))}
-                    <td>
-                      <button className="btn btn-small btn-delete" disabled={busy} onClick={() => removeDoc(d.id)}>
-                        Quitar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          <h3 className="section-title" style={{ margin: 0 }}>Documentos de soporte ({docs.length})</h3>
+          <div className="view-toggle">
+            <button className={`btn btn-small ${view === 'timeline' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setView('timeline')}>Cronología</button>
+            <button className={`btn btn-small ${view === 'table' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setView('table')}>Tabla</button>
           </div>
+        </div>
+
+        {view === 'timeline' && <ClaimTimeline documents={docs} />}
+
+        {view === 'table' && (
+          docs.length === 0 ? (
+            <div className="empty-state"><p>Aún no hay documentos en este claim</p></div>
+          ) : (
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>DOCUMENTO NRO</th><th>DESCRIPCIÓN</th><th>FECHA</th>
+                    <th>STATUS G</th><th className="center">Atraso</th>
+                    {CLAIM_LINE_FIELDS.map((f) => <th key={f.key}>{f.label}</th>)}
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {docs.map((d) => (
+                    <tr key={d.id}>
+                      <td className="code-cell">{d.documento_nro}</td>
+                      <td>{d.descripcion}</td>
+                      <td>{fmtDate(d.fecha)}</td>
+                      <td>
+                        {d.is_pending
+                          ? <span className="pill pill-warn">{d.status_g || 'PENDIENTE'}</span>
+                          : <span className="pill pill-ok">{d.status_g}</span>}
+                      </td>
+                      <td className="center">{d.is_pending && d.dias_atraso > 0 ? `${d.dias_atraso} d` : '—'}</td>
+                      {CLAIM_LINE_FIELDS.map((f) => (
+                        <td key={f.key}>
+                          <input
+                            className="note-input"
+                            placeholder={f.label}
+                            value={(lineData[d.id]?.[f.key]) ?? ''}
+                            disabled={busy}
+                            onChange={(e) => setField(d.id, f.key, e.target.value)}
+                            onBlur={() => saveLine(d)}
+                          />
+                        </td>
+                      ))}
+                      <td>
+                        <button className="btn btn-small btn-delete" disabled={busy} onClick={() => removeDoc(d.id)}>
+                          Quitar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
 
         {!isClosed && (

@@ -15,6 +15,7 @@ const usersRouter = require('./routes/users');
 const organizationsRouter = require('./routes/organizations');
 const contractMembersRouter = require('./routes/contractMembers');
 const settingsRouter = require('./routes/settings');
+const changeOrdersRouter = require('./routes/changeOrders');
 const { requireAuth, requireOrgAccess } = require('./middleware/auth');
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/companies', requireAuth, requireOrgAccess, companiesRouter);
 app.use('/api/projects', requireAuth, requireOrgAccess, projectsRouter);
 app.use('/api/contracts', requireAuth, requireOrgAccess, contractsRouter);
 app.use('/api/claims', requireAuth, requireOrgAccess, claimsRouter);
+app.use('/api/change-orders', requireAuth, requireOrgAccess, changeOrdersRouter);
 app.use('/api/reports', requireAuth, requireOrgAccess, reportsRouter);
 
 // Servir frontend compilado en producción

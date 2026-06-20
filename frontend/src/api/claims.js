@@ -55,3 +55,13 @@ export async function removeDocFromClaim(claimId, documentId) {
   if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Error al quitar documento'); }
   return res.json();
 }
+
+export async function createClaimFromRfi(docId, overrides = {}) {
+  const res = await fetch(`${BASE}/from-rfi/${docId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(overrides),
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Error al crear claim'); }
+  return res.json();
+}
