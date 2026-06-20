@@ -141,6 +141,21 @@ function Dashboard({ currentUser, onLogout }) {
   }, [claimMin]);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
+  // Persisted custom order of the document filter segments (drag to reorder).
+  const [filterOrder, setFilterOrder] = useState(() => {
+    try {
+      const raw = localStorage.getItem('docFilters.order');
+      const arr = raw ? JSON.parse(raw) : null;
+      return Array.isArray(arr) ? arr : null;
+    } catch { return null; }
+  });
+  useEffect(() => {
+    try {
+      if (filterOrder) localStorage.setItem('docFilters.order', JSON.stringify(filterOrder));
+    } catch { /* ignore */ }
+  }, [filterOrder]);
+  const [dragFilter, setDragFilter] = useState(null);
+  const [dragOverFilter, setDragOverFilter] = useState(null);
   const [headerCollapsed, setHeaderCollapsed] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showFilterHelp, setShowFilterHelp] = useState(() => {
@@ -317,6 +332,30 @@ function Dashboard({ currentUser, onLogout }) {
     { key: 'transmittal', label: '# TRANSMITTAL' },
     { key: 'responsable', label: 'RESPONSABLE' },
   ];
+  // Filter fields laid out in the user's saved order. Unknown/new fields are
+  // appended so the list stays complete even after the field set changes.
+  const orderedFilterFields = useMemo(() => {
+    if (!filterOrder) return DOC_FILTER_FIELDS;
+    const byKey = new Map(DOC_FILTER_FIELDS.map((f) => [f.key, f]));
+    const ordered = filterOrder.map((k) => byKey.get(k)).filter(Boolean);
+    for (const f of DOC_FILTER_FIELDS) {
+      if (!ordered.includes(f)) ordered.push(f);
+    }
+    return ordered;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterOrder]);
+  // Move a filter segment to where another one sits (drag-and-drop reorder).
+  const moveFilter = (fromKey, toKey) => {
+    if (!fromKey || fromKey === toKey) return;
+    const base = orderedFilterFields.map((f) => f.key);
+    const from = base.indexOf(fromKey);
+    const to = base.indexOf(toKey);
+    if (from === -1 || to === -1) return;
+    const next = [...base];
+    next.splice(from, 1);
+    next.splice(to, 0, fromKey);
+    setFilterOrder(next);
+  };
   const docFilterOptions = useMemo(() => {
     const opts = {};
     for (const f of DOC_FILTER_FIELDS) {
@@ -462,12 +501,36 @@ function Dashboard({ currentUser, onLogout }) {
                       </div>
                       <div className="filters-popover-body">
                         {showFilterHelp && (
-                          <div className="doc-filters-hint">Ctrl+clic para elegir varios o quitar</div>
+                          <div className="doc-filters-hint">Ctrl+clic para elegir varios o quitar · arrastra ⠿ para reordenar los filtros</div>
                         )}
                         <div className="report-filters doc-filters">
-                          {DOC_FILTER_FIELDS.map((f) => (
-                            <label key={f.key} className="report-filter">
-                              <span>{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
+                          {orderedFilterFields.map((f) => (
+                            <label
+                              key={f.key}
+                              className={`report-filter ${dragOverFilter === f.key && dragFilter !== f.key ? 'filter-drop-over' : ''} ${dragFilter === f.key ? 'filter-dragging' : ''}`}
+                              onDragOver={(e) => { if (dragFilter) { e.preventDefault(); setDragOverFilter(f.key); } }}
+                              onDragLeave={() => setDragOverFilter((k) => (k === f.key ? null : k))}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                moveFilter(e.dataTransfer.getData('text/filter') || dragFilter, f.key);
+                                setDragFilter(null);
+                                setDragOverFilter(null);
+                              }}
+                            >
+                              <span className="report-filter-head">
+                                <span
+                                  className="filter-grip"
+                                  draggable
+                                  title="Arrastra para reordenar"
+                                  onDragStart={(e) => {
+                                    e.dataTransfer.setData('text/filter', f.key);
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    setDragFilter(f.key);
+                                  }}
+                                  onDragEnd={() => { setDragFilter(null); setDragOverFilter(null); }}
+                                >⠿</span>
+                                <span className="filter-label-text">{f.label} {docFilters[f.key]?.length ? `(${docFilters[f.key].length})` : ''}</span>
+                              </span>
                               <select
                                 multiple
                                 size={5}
