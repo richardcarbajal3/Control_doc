@@ -30,7 +30,7 @@ const docLabel = (d) => d.documento_nro || d.descripcion || d.transmittal || `#$
 // Claims dock shown beside the documents register. Each claim is a drop target:
 // drag a table row here to link it (sets claim_id). A Cerrado claim rejects new
 // documents. Expand a claim to see/detach its documents.
-export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimIds = [], onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy, floating = false, onToggleFloat, minimized = false, onToggleMinimize }) {
+export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimIds = [], onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy, floating = false, onToggleFloat, minimized = false, onToggleMinimize, onOpenDetail }) {
   const [over, setOver] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [msg, setMsg] = useState('');
@@ -290,6 +290,16 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
                     {c.status}
                   </span>
                   <span className="count-pill">{linked.length} doc</span>
+                  {onOpenDetail && (
+                    <button
+                      type="button"
+                      className="dock-ctl dock-ctl-detail"
+                      title="Ver complementos de este claim"
+                      onClick={(e) => { e.stopPropagation(); onOpenDetail(c); }}
+                    >
+                      ↗
+                    </button>
+                  )}
                 </span>
               </div>
               {isOpen && (

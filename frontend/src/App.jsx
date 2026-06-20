@@ -638,6 +638,7 @@ function Dashboard({ currentUser, onLogout }) {
                         onToggleFloat={() => setClaimFloat((v) => !v)}
                         minimized={claimMin}
                         onToggleMinimize={() => setClaimMin((v) => !v)}
+                        onOpenDetail={(c) => setClaimDetail(c)}
                       />
                     </div>
                   ) : (
@@ -762,6 +763,7 @@ function Dashboard({ currentUser, onLogout }) {
           allDocuments={docs.items}
           onClose={() => setClaimDetail(null)}
           onChanged={() => { claims.refresh(); docs.refresh(); }}
+          floating={claimMode}
         />
       )}
 
