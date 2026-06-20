@@ -1412,6 +1412,37 @@ tr:hover {
 .claim-view-modes button.active { background: #1e3a5f; color: #fff; font-weight: 600; }
 
 /* ── Document detail (ficha del transmittal) ────────────────────────── */
+/* ── Floating claim detail panel (opened from ClaimDropPanel without tab change) ── */
+.claim-detail-float {
+  position: fixed;
+  z-index: 65;
+  background: #fff;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.22);
+  width: 680px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  resize: both;
+  overflow: hidden;
+}
+.claim-detail-float-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem 1rem 0.9rem;
+  min-height: 0;
+}
+.claim-detail-float .claim-dock-bar { border-bottom: 1px solid #e2e8f0; }
+.dock-ctl-detail {
+  font-size: 0.78rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  color: #1e3a5f;
+}
+.dock-ctl-detail:hover { background: #dbeafe; color: #1d4ed8; }
+
 .doc-row-clickable { cursor: pointer; }
 .ficha-grid {
   display: grid;
