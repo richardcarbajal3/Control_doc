@@ -26,6 +26,7 @@ import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
 import RFIPanel from './components/RFIPanel';
+import RFIJourneyList from './components/RFIJourneyList';
 import ChangeOrderList from './components/ChangeOrderList';
 import ChangeOrderForm from './components/ChangeOrderForm';
 import ChangeOrderDetail from './components/ChangeOrderDetail';
@@ -152,6 +153,9 @@ function Dashboard({ currentUser, onLogout }) {
   }, [claimMin]);
   const [dockMode, setDockMode] = useState('claims'); // 'claims' | 'change-orders'
   const [rfiOnly, setRfiOnly] = useState(false);
+  // Journey ("recorrido") view: collapse RFI transmittals into one row per root
+  // document showing recibido (inicio) → enviado (cierre / atención).
+  const [rfiJourney, setRfiJourney] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
   // Persisted custom order of the document filter segments (drag to reorder).
@@ -519,7 +523,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRfiJourney(false); setRfiOnly(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -634,6 +638,15 @@ function Dashboard({ currentUser, onLogout }) {
                   ❓ Solo RFI
                 </button>
               )}
+              {tab === 'documents' && (
+                <button
+                  className={`btn ${rfiJourney ? 'btn-primary' : 'btn-secondary'}`}
+                  title="Recorrido del RFI: agrupa las remisiones del mismo documento (recibido → enviado)"
+                  onClick={() => setRfiJourney((v) => !v)}
+                >
+                  🧭 Recorrido RFI
+                </button>
+              )}
               {tab === 'documents' && isAdmin && (
                 <button
                   className={`btn btn-secondary`}
@@ -673,7 +686,10 @@ function Dashboard({ currentUser, onLogout }) {
               <div className="loading">Cargando...</div>
             ) : (
               <>
-                {tab === 'documents' && (
+                {tab === 'documents' && rfiJourney && (
+                  <RFIJourneyList documents={visibleDocs} onRowClick={handleDocRowClick} />
+                )}
+                {tab === 'documents' && !rfiJourney && (
                   claimMode ? (
                     <div className="docs-claim-split">
                       <div className="docs-claim-main">

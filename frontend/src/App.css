@@ -1660,3 +1660,57 @@ body.col-resizing * {
   margin-right: 0.25rem;
   vertical-align: middle;
 }
+
+/* ── RFI Journey ("recorrido") view ──────────────────────────────────── */
+.rfi-journey-row { cursor: pointer; }
+.rfi-journey-row:hover td { background: #fef9e2; }
+.rfi-journey-toggle { text-align: center; }
+.rfi-expand-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 0.85rem;
+  padding: 0 0.2rem;
+}
+.rfi-expand-btn:hover { color: #1e293b; }
+.rfi-journey-dias, .rfi-journey-count { text-align: center; }
+.journey-leg {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.journey-leg-in { background: #dbeafe; color: #1d4ed8; }
+.journey-leg-out { background: #d1fae5; color: #065f46; }
+.journey-leg-empty { color: #94a3b8; font-weight: 500; font-style: italic; }
+.pill-soft { background: #e2e8f0; color: #475569; }
+
+.rfi-journey-detail-row > td { background: #f8fafc; padding: 0.75rem 1rem; }
+.rfi-journey-detail .rfi-flow { margin: 0 0 0.75rem; }
+.rfi-journey-subtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.rfi-journey-subtable th {
+  text-align: left;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.4rem 0.6rem;
+}
+.rfi-journey-subtable td {
+  padding: 0.4rem 0.6rem;
+  border-top: 1px solid #eef2f7;
+  color: #1f2937;
+}
+.rfi-journey-subtable tr.doc-row-clickable { cursor: pointer; }
+.rfi-journey-subtable tr.doc-row-clickable:hover td { background: #f8fafc; }
