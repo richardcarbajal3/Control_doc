@@ -17,13 +17,15 @@ export const IMPORT_CONFIGS = {
       { key: 'fecha', label: 'FECHA', type: 'date', colWidth: 86 },
       // rtl:true → muestra el FINAL del nro de transmittal (la parte más discriminante)
       { key: 'transmittal', label: '# TRANSMITTAL', colWidth: 108, rtl: true },
+      { key: 'item', label: 'ITEM', colWidth: 46 },
       { key: 'referencia', label: 'REFERENCIA', colWidth: 88 },
       { key: 'documento_nro', label: 'DOCUMENTO NRO', colWidth: 132 },
       { key: 'rev', label: 'REV.', colWidth: 46 },
       { key: 'descripcion', label: 'DESCRIPCIÓN', type: 'textarea', colWidth: 190 },
       { key: 'tipo_doc', label: 'TIPO DE DOC', colWidth: 52 },
-      // STATUS DE CONTRATISTA es el estado del DOCUMENTO en sí (revisión técnica).
-      { key: 'status_contratista', label: 'STATUS DE CONTRATISTA',
+      // ESTATUS DE DOCUMENTO es el estado del DOCUMENTO en sí (revisión técnica).
+      // La columna en BD sigue siendo status_contratista; solo cambia la etiqueta.
+      { key: 'status_contratista', label: 'ESTATUS DE DOCUMENTO',
         options: ['APROBADO', 'EN REVISIÓN', 'CON OBSERVACIONES', 'ANULADO'], colWidth: 100 },
       { key: 'responsable', label: 'RESPONSABLE', colWidth: 68 },
     ],
