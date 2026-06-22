@@ -33,6 +33,7 @@ import ClassificationRules from './components/ClassificationRules';
 import { IMPORT_CONFIGS } from './lib/importConfig';
 import { useFloatingPanel } from './lib/useFloatingPanel';
 import { applyClassification } from './lib/classify';
+import { isRfiDoc } from './lib/isRfi';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
@@ -150,6 +151,7 @@ function Dashboard({ currentUser, onLogout }) {
     try { localStorage.setItem('claimDock.min', claimMin ? '1' : '0'); } catch { /* ignore */ }
   }, [claimMin]);
   const [dockMode, setDockMode] = useState('claims'); // 'claims' | 'change-orders'
+  const [rfiOnly, setRfiOnly] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
   // Persisted custom order of the document filter segments (drag to reorder).
@@ -325,8 +327,7 @@ function Dashboard({ currentUser, onLogout }) {
 
   // Contextual row-click: RFI → RFIPanel, else → DocumentDetail
   const handleDocRowClick = (doc) => {
-    const tipo = (doc.tipo_doc || '').toUpperCase().trim();
-    if (tipo === 'RFI') setDocDetail({ ...doc, _panel: 'rfi' });
+    if (isRfiDoc(doc)) setDocDetail({ ...doc, _panel: 'rfi' });
     else setDocDetail(doc);
   };
 
@@ -429,13 +430,15 @@ function Dashboard({ currentUser, onLogout }) {
   // with selections keeps docs whose value is any of them; fields combine (AND).
   const visibleDocs = useMemo(() => {
     const active = Object.entries(docFilters).filter(([, v]) => Array.isArray(v) && v.length);
-    return active.length
+    let docs = active.length
       ? docsWithFamilia.filter((d) => active.every(([k, vals]) => {
           const dv = String(d[k] ?? '').toUpperCase();
           return vals.some((v) => String(v).toUpperCase() === dv);
         }))
       : docsWithFamilia;
-  }, [docsWithFamilia, docFilters]);
+    if (rfiOnly) docs = docs.filter(isRfiDoc);
+    return docs;
+  }, [docsWithFamilia, docFilters, rfiOnly]);
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
@@ -622,21 +625,15 @@ function Dashboard({ currentUser, onLogout }) {
                   )}
                 </div>
               )}
-              {tab === 'documents' && (() => {
-                const rfiActive = docFilters.tipo_doc?.includes('RFI');
-                return (
-                  <button
-                    className={`btn ${rfiActive ? 'btn-primary' : 'btn-secondary'}`}
-                    title="Mostrar solo documentos RFI"
-                    onClick={() => setDocFilters((s) => ({
-                      ...s,
-                      tipo_doc: rfiActive ? [] : ['RFI'],
-                    }))}
-                  >
-                    ❓ Solo RFI
-                  </button>
-                );
-              })()}
+              {tab === 'documents' && (
+                <button
+                  className={`btn ${rfiOnly ? 'btn-primary' : 'btn-secondary'}`}
+                  title="Mostrar solo documentos RFI (detectados por código de documento)"
+                  onClick={() => setRfiOnly((v) => !v)}
+                >
+                  ❓ Solo RFI
+                </button>
+              )}
               {tab === 'documents' && isAdmin && (
                 <button
                   className={`btn btn-secondary`}
