@@ -3,8 +3,7 @@
 // secondary fallback for records explicitly tagged that way.
 export function isRfiDoc(doc) {
   if (!doc) return false;
-  const code = (doc.documento_nro || '').toUpperCase();
-  if (code.includes('RFI')) return true;
-  const tipo = (doc.tipo_doc || '').toUpperCase().trim();
-  return tipo === 'RFI';
+  if ((doc.documento_nro || '').toUpperCase().includes('RFI')) return true;
+  if ((doc.descripcion || '').toUpperCase().includes('RFI')) return true;
+  return (doc.tipo_doc || '').toUpperCase().trim() === 'RFI';
 }
