@@ -195,4 +195,45 @@ function parseOrgId(raw) {
   return n;
 }
 
-module.exports = { syncDocuments, rowsFromWorkbook, findHeaderRow, normHeader };
+// Lee la configuración global de sincronización (tabla app_settings, fila 1).
+async function getConfig() {
+  const { rows } = await pool.query(
+    'SELECT sync_share_url, sync_sheet, sync_org_id, sync_enabled, sync_last_run FROM app_settings WHERE id = 1'
+  );
+  return rows[0] || { sync_share_url: null, sync_sheet: 'Documentos', sync_org_id: null, sync_enabled: true, sync_last_run: null };
+}
+
+// Ejecuta la sincronización tomando los parámetros de app_settings y guarda el
+// resultado en sync_last_run. Es lo que invocan tanto el cron como el botón
+// "Sincronizar ahora". Si no hay enlace o está desactivada, no hace nada.
+async function syncFromConfig({ ignoreEnabled = false } = {}) {
+  const cfg = await getConfig();
+  const url = cfg.sync_share_url || process.env.SYNC_SHARE_URL;
+  if (!url) return { skipped: true, reason: 'No hay enlace de SharePoint configurado' };
+  if (!cfg.sync_enabled && !ignoreEnabled) return { skipped: true, reason: 'Sincronización desactivada' };
+
+  const result = await syncDocuments({
+    shareUrl: url,
+    sheet: cfg.sync_sheet || 'Documentos',
+    orgId: cfg.sync_org_id == null ? null : cfg.sync_org_id,
+  });
+  const summary = {
+    ok: true, at: new Date().toISOString(),
+    inserted: result.inserted, updated: result.updated, skipped: result.skipped,
+    total: result.total, sheet: result.sheet, errors: result.errors,
+  };
+  await saveLastRun(summary);
+  return summary;
+}
+
+// Persiste el resultado (o error) de la última corrida para mostrarlo en la UI.
+async function saveLastRun(summary) {
+  try {
+    await pool.query('UPDATE app_settings SET sync_last_run = $1 WHERE id = 1', [JSON.stringify(summary)]);
+  } catch (e) {
+    console.error('[sync] no se pudo guardar sync_last_run:', e.message);
+  }
+}
+
+module.exports = { syncDocuments, syncFromConfig, getConfig, saveLastRun, rowsFromWorkbook, findHeaderRow, normHeader };
+

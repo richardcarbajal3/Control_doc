@@ -244,3 +244,21 @@ CREATE TABLE IF NOT EXISTS claim_documents (
 INSERT INTO claim_documents (claim_id, document_id, organization_id)
 SELECT claim_id, id, organization_id FROM documents WHERE claim_id IS NOT NULL
 ON CONFLICT DO NOTHING;
+
+-- =========================================================================
+-- Configuración global de la autosincronización del Excel de documentos.
+-- Una sola fila (id = 1). El admin la edita desde la web app: enlace de
+-- SharePoint del Excel, hoja, organización destino y si está activa. El último
+-- resultado se guarda en sync_last_run para mostrarlo en la interfaz.
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS app_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  sync_share_url TEXT,
+  sync_sheet VARCHAR(120) NOT NULL DEFAULT 'Documentos',
+  sync_org_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL,
+  sync_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  sync_last_run JSONB,
+  updated_at TIMESTAMP DEFAULT NOW(),
+  CONSTRAINT app_settings_singleton CHECK (id = 1)
+);
+INSERT INTO app_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;

@@ -19,6 +19,7 @@ import UserForm from './components/UserForm';
 import OrgList from './components/OrgList';
 import OrgForm from './components/OrgForm';
 import OrgSettings from './components/OrgSettings';
+import SyncSettings from './components/SyncSettings';
 import AssignAdminForm from './components/AssignAdminForm';
 import Login from './components/Login';
 import PasteGrid from './components/PasteGrid';
@@ -155,6 +156,7 @@ function Dashboard({ currentUser, onLogout }) {
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
   const [showOrgSettings, setShowOrgSettings] = useState(false);
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
   const [onedriveBaseUrl, setOnedriveBaseUrl] = useState(currentUser.onedrive_base_url || null);
 
   const docs = useModule(getDocuments);
@@ -373,6 +375,15 @@ function Dashboard({ currentUser, onLogout }) {
               title="Configurar integración OneDrive"
             >
               📁 OneDrive
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              className="btn btn-secondary btn-small"
+              onClick={() => setShowSyncSettings(true)}
+              title="Configurar y ejecutar la sincronización del Excel"
+            >
+              🔄 Sincronización
             </button>
           )}
           <button className="btn btn-secondary btn-small" onClick={onLogout}>Salir</button>
@@ -639,6 +650,9 @@ function Dashboard({ currentUser, onLogout }) {
           onSaved={(url) => { setOnedriveBaseUrl(url); setShowOrgSettings(false); }}
           onCancel={() => setShowOrgSettings(false)}
         />
+      )}
+      {showSyncSettings && (
+        <SyncSettings isOwner={isOwner} onClose={() => setShowSyncSettings(false)} />
       )}
     </div>
   );
