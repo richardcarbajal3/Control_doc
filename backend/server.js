@@ -15,6 +15,8 @@ const usersRouter = require('./routes/users');
 const organizationsRouter = require('./routes/organizations');
 const contractMembersRouter = require('./routes/contractMembers');
 const settingsRouter = require('./routes/settings');
+const syncRouter = require('./routes/sync');
+const { startScheduler } = require('./lib/scheduler');
 const { requireAuth, requireOrgAccess } = require('./middleware/auth');
 
 const app = express();
@@ -36,6 +38,8 @@ app.use('/api/users', usersRouter);
 app.use('/api/organizations', organizationsRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/contracts/:contractId/members', contractMembersRouter);
+// Autosincronización del Excel de documentos (protegida por SYNC_TOKEN).
+app.use('/api/sync', syncRouter);
 
 // Data routes: require a session AND belonging to an organization (or owner).
 app.use('/api/documents', requireAuth, requireOrgAccess, documentsRouter);
@@ -69,6 +73,10 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Frontend dist existe: ${fs.existsSync(indexHtml)}`);
 
   initDB()
-    .then(() => console.log('Base de datos inicializada (background) OK'))
+    .then(() => {
+      console.log('Base de datos inicializada (background) OK');
+      // Arranca la autosincronización solo después de tener el esquema listo.
+      startScheduler();
+    })
     .catch((err) => console.error('Fallo al inicializar la base de datos (no bloquea el arranque):', err.message));
 });

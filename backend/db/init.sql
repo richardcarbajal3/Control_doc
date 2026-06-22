@@ -206,6 +206,12 @@ ALTER TABLE contracts  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENC
 ALTER TABLE claims     ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE documents  ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
 
+-- Acelera el upsert de la autosincronización, que busca documentos por
+-- (organización, # transmittal, documento nro). NO es único a propósito: así no
+-- falla si en datos existentes hubiera combinaciones repetidas.
+CREATE INDEX IF NOT EXISTS idx_documents_sync_key
+  ON documents (organization_id, transmittal, documento_nro);
+
 -- Uniqueness becomes per-tenant: two organizations may reuse the same RUC or
 -- contract/project code. NULL organization_id (legacy/owner data) stays distinct.
 ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_ruc_key;
