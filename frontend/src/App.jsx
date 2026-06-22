@@ -336,6 +336,7 @@ function Dashboard({ currentUser, onLogout }) {
   const tabConfig = {
     documents: { label: 'Documento', searchPlaceholder: 'Buscar documento (nro, descripción, contrato)...' },
     claims: { label: 'Claim', searchPlaceholder: 'Buscar claim (código, título, contrato)...' },
+    'change-orders': { label: 'Orden de Cambio', searchPlaceholder: 'Buscar por código, título o contrato...' },
     companies: { label: 'Empresa', searchPlaceholder: 'Buscar por RUC o razón social...' },
     projects: { label: 'Proyecto', searchPlaceholder: 'Buscar por código o nombre...' },
     contracts: { label: 'Contrato', searchPlaceholder: 'Buscar por código o título...' },
