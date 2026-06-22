@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS documents (
   descripcion_contrato TEXT,
   fecha DATE,
   transmittal VARCHAR(255),
+  item VARCHAR(60),
   referencia VARCHAR(255),
   documento_nro VARCHAR(255),
   rev VARCHAR(30),
@@ -118,6 +119,7 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS contrato VARCHAR(255);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS descripcion_contrato TEXT;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS fecha DATE;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS transmittal VARCHAR(255);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS item VARCHAR(60);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS referencia VARCHAR(255);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS documento_nro VARCHAR(255);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS rev VARCHAR(30);

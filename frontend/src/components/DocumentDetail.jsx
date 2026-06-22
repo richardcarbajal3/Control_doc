@@ -60,7 +60,7 @@ export default function DocumentDetail({ doc, allDocuments = [], claims = [], on
             <thead>
               <tr>
                 <th>DOCUMENTO NRO</th><th>REV</th><th>DESCRIPCIÓN</th>
-                <th>TIPO</th><th>STATUS DE CONTRATISTA</th>
+                <th>TIPO</th><th>ESTATUS DE DOCUMENTO</th>
               </tr>
             </thead>
             <tbody>

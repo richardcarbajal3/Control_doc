@@ -19,13 +19,14 @@ const DOCUMENTS = [
   { key: 'descripcion_contrato', label: 'DESCRIPCIÓN CONTRATO', type: 'texto' },
   { key: 'fecha', label: 'FECHA', type: 'fecha' },
   { key: 'transmittal', label: '# TRANSMITTAL', type: 'texto', unique: true },
+  { key: 'item', label: 'ITEM', type: 'texto' },
   { key: 'referencia', label: 'REFERENCIA', type: 'texto' },
   { key: 'documento_nro', label: 'DOCUMENTO NRO', type: 'texto', unique: true },
   { key: 'rev', label: 'REV.', type: 'texto' },
   { key: 'descripcion', label: 'DESCRIPCIÓN', type: 'texto' },
   { key: 'tipo_doc', label: 'TIPO DE DOC', type: 'texto' },
-  { key: 'status_contratista', label: 'STATUS DE CONTRATISTA', type: 'texto',
-    note: 'APROBADO / EN REVISIÓN / CON OBSERVACIONES / ANULADO' },
+  { key: 'status_contratista', label: 'ESTATUS DE DOCUMENTO', type: 'texto',
+    note: 'Antes "STATUS DE CONTRATISTA". Columna BD: status_contratista. APROBADO / EN REVISIÓN / CON OBSERVACIONES / ANULADO' },
   { key: 'responsable', label: 'RESPONSABLE', type: 'texto' },
 ];
 
