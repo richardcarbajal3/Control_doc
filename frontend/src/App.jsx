@@ -384,6 +384,7 @@ function Dashboard({ currentUser, onLogout }) {
   // Quick filters for the Documents tab. Each is a dropdown built from the
   // distinct values present, so the user can narrow the register fast.
   const DOC_FILTER_FIELDS = [
+    { key: 'tipo_doc', label: 'TIPO DOC' },
     { key: 'familia', label: 'FAMILIA' },
     { key: 'n_contrato', label: 'Contrato' },
     { key: 'status', label: 'STATUS' },
@@ -618,6 +619,21 @@ function Dashboard({ currentUser, onLogout }) {
                   )}
                 </div>
               )}
+              {tab === 'documents' && (() => {
+                const rfiActive = docFilters.tipo_doc?.includes('RFI');
+                return (
+                  <button
+                    className={`btn ${rfiActive ? 'btn-primary' : 'btn-secondary'}`}
+                    title="Mostrar solo documentos RFI"
+                    onClick={() => setDocFilters((s) => ({
+                      ...s,
+                      tipo_doc: rfiActive ? [] : ['RFI'],
+                    }))}
+                  >
+                    ❓ Solo RFI
+                  </button>
+                );
+              })()}
               {tab === 'documents' && isAdmin && (
                 <button
                   className={`btn btn-secondary`}
