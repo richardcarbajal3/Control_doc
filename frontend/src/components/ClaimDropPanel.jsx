@@ -2,6 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CLAIM_STATUS_COLORS, CLAIM_TYPES } from '../lib/claimOptions';
 import { CLAIM_LINE_FIELDS } from '../lib/claimLineFields';
 
+const OC_STATUS_COLORS = {
+  'Borrador': '#94a3b8',
+  'En negociación': '#f59e0b',
+  'Aprobada': '#22c55e',
+  'Rechazada': '#ef4444',
+};
+
 const POS_KEY = 'claimDock.pos';
 const SIZE_KEY = 'claimDock.size';
 const HELP_KEY = 'claimDock.help';
@@ -30,12 +37,13 @@ const docLabel = (d) => d.documento_nro || d.descripcion || d.transmittal || `#$
 // Claims dock shown beside the documents register. Each claim is a drop target:
 // drag a table row here to link it (sets claim_id). A Cerrado claim rejects new
 // documents. Expand a claim to see/detach its documents.
-export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign, onCreateClaim, defaultContract = '', selectedClaimIds = [], onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy, floating = false, onToggleFloat, minimized = false, onToggleMinimize, onOpenDetail }) {
+export default function ClaimDropPanel({ documents, claims, changeOrders = [], dockMode = 'claims', onDockMode, onAssign, onUnassign, onCreateClaim, onCreateChangeOrder, defaultContract = '', selectedClaimIds = [], onSelectClaim, viewMode = 'highlight', onViewMode, relatedCount = 0, unrelatedCount = 0, busy, floating = false, onToggleFloat, minimized = false, onToggleMinimize, onOpenDetail }) {
   const [over, setOver] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [msg, setMsg] = useState('');
   const [creating, setCreating] = useState(false);
   const [newClaim, setNewClaim] = useState({ title: '', type: 'Otro' });
+  const [newCo, setNewCo] = useState({ title: '', status: 'Borrador' });
   const [saving, setSaving] = useState(false);
   const [pos, setPos] = useState(() => {
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -114,6 +122,18 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
     finally { setSaving(false); }
   };
 
+  const submitNewCo = async (e) => {
+    e.preventDefault();
+    if (!newCo.title.trim() || !onCreateChangeOrder) return;
+    setSaving(true); setMsg('');
+    try {
+      await onCreateChangeOrder({ title: newCo.title.trim(), status: newCo.status, n_contrato: defaultContract || null });
+      setNewCo({ title: '', status: 'Borrador' });
+      setCreating(false);
+    } catch (err) { setMsg(err.message); }
+    finally { setSaving(false); }
+  };
+
   const docsByClaim = useMemo(() => {
     const m = new Map();
     for (const d of documents) {
@@ -158,7 +178,17 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
       >
         <span className="claim-dock-bar-title">
           {floating && <span className="claim-dock-grip" aria-hidden="true">⠿</span>}
-          Claims ({claims.length})
+          <span className="dock-mode-switch">
+            <button
+              className={`dock-mode-btn ${dockMode === 'claims' ? 'active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onDockMode?.('claims'); setCreating(false); setExpanded({}); }}
+            >Claims</button>
+            <button
+              className={`dock-mode-btn ${dockMode === 'change-orders' ? 'active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onDockMode?.('change-orders'); setCreating(false); setExpanded({}); }}
+            >OC</button>
+          </span>
+          <span className="dock-count">({dockMode === 'claims' ? claims.length : changeOrders.length})</span>
         </span>
         <span className="claim-dock-ctls">
           <button
@@ -194,14 +224,14 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
       <div className="claim-dock-body">
       <div className="claim-board-head">
         <span className="section-title">Vincular documentos</span>
-        {onCreateClaim && (
+        {(dockMode === 'claims' ? onCreateClaim : onCreateChangeOrder) && (
           <button className="btn btn-small btn-primary" onClick={() => setCreating((v) => !v)}>
-            {creating ? '✕' : '+ Caso'}
+            {creating ? '✕' : dockMode === 'claims' ? '+ Claim' : '+ OC'}
           </button>
         )}
       </div>
 
-      {creating && (
+      {creating && dockMode === 'claims' && (
         <form className="claim-create" onSubmit={submitNewClaim}>
           <input
             className="note-input"
@@ -221,7 +251,25 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
             Contrato: <strong>{defaultContract || '— (sin filtrar)'}</strong>
           </div>
           <button className="btn btn-small btn-primary" type="submit" disabled={saving || !newClaim.title.trim()}>
-            {saving ? 'Creando…' : 'Crear caso'}
+            {saving ? 'Creando…' : 'Crear claim'}
+          </button>
+        </form>
+      )}
+
+      {creating && dockMode === 'change-orders' && (
+        <form className="claim-create" onSubmit={submitNewCo}>
+          <input
+            className="note-input"
+            autoFocus
+            placeholder="Título de la Orden de Cambio…"
+            value={newCo.title}
+            onChange={(e) => setNewCo((s) => ({ ...s, title: e.target.value }))}
+          />
+          <div className="claim-create-meta">
+            Contrato: <strong>{defaultContract || '— (sin filtrar)'}</strong>
+          </div>
+          <button className="btn btn-small btn-primary" type="submit" disabled={saving || !newCo.title.trim()}>
+            {saving ? 'Creando…' : 'Crear OC'}
           </button>
         </form>
       )}
@@ -264,62 +312,108 @@ export default function ClaimDropPanel({ documents, claims, onAssign, onUnassign
       )}
       {msg && <div className="form-error">{msg}</div>}
       <div className="drop-list">
-        {claims.length === 0 && <div className="empty-state"><p>Sin claims</p></div>}
-        {claims.map((c) => {
-          const linked = docsByClaim.get(c.id) || [];
-          const isOpen = !!expanded[c.id];
-          const closed = isClosed(c);
-          return (
-            <div
-              key={c.id}
-              className={`claim-drop-card ${over === c.id ? 'drag-over' : ''} ${closed ? 'claim-closed' : ''} ${selectedClaimIds.includes(c.id) ? 'claim-selected' : ''}`}
-              onDragOver={(e) => { if (!closed) { e.preventDefault(); setOver(c.id); } }}
-              onDragLeave={() => setOver((id) => (id === c.id ? null : id))}
-              onDrop={(e) => handleDrop(e, c)}
-            >
-              <div
-                className="claim-drop-head"
-                onClick={() => { onSelectClaim?.(c.id); setExpanded((s) => ({ ...s, [c.id]: !s[c.id] })); }}
-              >
-                <span className="claim-drop-title">
-                  <span className="caret">{isOpen ? '▾' : '▸'}</span>
-                  {c.code ? `${c.code} — ` : ''}{c.title}
-                </span>
-                <span className="claim-drop-tags">
-                  <span className="badge" style={{ backgroundColor: CLAIM_STATUS_COLORS[c.status] || '#6b7280' }}>
-                    {c.status}
-                  </span>
-                  <span className="count-pill">{linked.length} doc</span>
-                  {onOpenDetail && (
-                    <button
-                      type="button"
-                      className="dock-ctl dock-ctl-detail"
-                      title="Ver complementos de este claim"
-                      onClick={(e) => { e.stopPropagation(); onOpenDetail(c); }}
-                    >
-                      ↗
-                    </button>
+        {/* ── CLAIMS MODE ─────────────────────────────────────────── */}
+        {dockMode === 'claims' && (
+          <>
+            {claims.length === 0 && <div className="empty-state"><p>Sin claims</p></div>}
+            {claims.map((c) => {
+              const linked = docsByClaim.get(c.id) || [];
+              const isOpen = !!expanded[c.id];
+              const closed = isClosed(c);
+              return (
+                <div
+                  key={c.id}
+                  className={`claim-drop-card ${over === c.id ? 'drag-over' : ''} ${closed ? 'claim-closed' : ''} ${selectedClaimIds.includes(c.id) ? 'claim-selected' : ''}`}
+                  onDragOver={(e) => { if (!closed) { e.preventDefault(); setOver(c.id); } }}
+                  onDragLeave={() => setOver((id) => (id === c.id ? null : id))}
+                  onDrop={(e) => handleDrop(e, c)}
+                >
+                  <div
+                    className="claim-drop-head"
+                    onClick={() => { onSelectClaim?.(c.id); setExpanded((s) => ({ ...s, [c.id]: !s[c.id] })); }}
+                  >
+                    <span className="claim-drop-title">
+                      <span className="caret">{isOpen ? '▾' : '▸'}</span>
+                      {c.code ? `${c.code} — ` : ''}{c.title}
+                    </span>
+                    <span className="claim-drop-tags">
+                      <span className="badge" style={{ backgroundColor: CLAIM_STATUS_COLORS[c.status] || '#6b7280' }}>
+                        {c.status}
+                      </span>
+                      <span className="count-pill">{linked.length} doc</span>
+                      {onOpenDetail && (
+                        <button type="button" className="dock-ctl dock-ctl-detail" title="Abrir claim"
+                          onClick={(e) => { e.stopPropagation(); onOpenDetail(c); }}>↗</button>
+                      )}
+                    </span>
+                  </div>
+                  {isOpen && (
+                    <div className="claim-drop-docs">
+                      {linked.length === 0
+                        ? <div className="claim-drop-empty">Arrastra documentos aquí</div>
+                        : linked.map((d) => (
+                            <div key={d.id} className="claim-doc-row">
+                              <span className="claim-doc-label">
+                                {docLabel(d)}
+                                {lineSummary(d) && <span className="claim-doc-note">— {lineSummary(d)}</span>}
+                              </span>
+                              <button className="chip-x" disabled={busy} onClick={() => onUnassign(d.id, c.id)}>✕</button>
+                            </div>
+                          ))}
+                    </div>
                   )}
-                </span>
-              </div>
-              {isOpen && (
-                <div className="claim-drop-docs">
-                  {linked.length === 0
-                    ? <div className="claim-drop-empty">Arrastra documentos aquí</div>
-                    : linked.map((d) => (
-                        <div key={d.id} className="claim-doc-row">
-                          <span className="claim-doc-label">
-                            {docLabel(d)}
-                            {lineSummary(d) && <span className="claim-doc-note">— {lineSummary(d)}</span>}
-                          </span>
-                          <button className="chip-x" disabled={busy} onClick={() => onUnassign(d.id, c.id)}>✕</button>
-                        </div>
-                      ))}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </>
+        )}
+
+        {/* ── CHANGE ORDERS MODE ──────────────────────────────────── */}
+        {dockMode === 'change-orders' && (
+          <>
+            {changeOrders.length === 0 && <div className="empty-state"><p>Sin órdenes de cambio</p></div>}
+            {changeOrders.map((co) => {
+              const isOpen = !!expanded[`co-${co.id}`];
+              return (
+                <div
+                  key={co.id}
+                  className={`claim-drop-card ${over === `co-${co.id}` ? 'drag-over' : ''}`}
+                  onDragOver={(e) => { e.preventDefault(); setOver(`co-${co.id}`); }}
+                  onDragLeave={() => setOver((id) => (id === `co-${co.id}` ? null : id))}
+                  onDrop={(e) => {
+                    e.preventDefault(); setOver(null);
+                    const docId = Number(e.dataTransfer.getData('text/plain'));
+                    if (docId) { setMsg(''); onAssign(docId, co.id); }
+                  }}
+                >
+                  <div className="claim-drop-head"
+                    onClick={() => setExpanded((s) => ({ ...s, [`co-${co.id}`]: !s[`co-${co.id}`] }))}
+                  >
+                    <span className="claim-drop-title">
+                      <span className="caret">{isOpen ? '▾' : '▸'}</span>
+                      {co.code ? `${co.code} — ` : ''}{co.title}
+                    </span>
+                    <span className="claim-drop-tags">
+                      <span className="badge" style={{ backgroundColor: OC_STATUS_COLORS[co.status] || '#6b7280' }}>
+                        {co.status}
+                      </span>
+                      <span className="count-pill">{co.doc_count || 0} doc</span>
+                      {onOpenDetail && (
+                        <button type="button" className="dock-ctl dock-ctl-detail" title="Abrir OC"
+                          onClick={(e) => { e.stopPropagation(); onOpenDetail(co); }}>↗</button>
+                      )}
+                    </span>
+                  </div>
+                  {isOpen && (
+                    <div className="claim-drop-docs">
+                      <div className="claim-drop-empty">Arrastra documentos aquí · {co.doc_count || 0} vinculados</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
       </div>
     </aside>

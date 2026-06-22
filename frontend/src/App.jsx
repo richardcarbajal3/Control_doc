@@ -38,7 +38,7 @@ import { getCompanies, createCompany, updateCompany, deleteCompany } from './api
 import { getProjects, createProject, updateProject, deleteProject } from './api/projects';
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
 import { getClaims, createClaim, updateClaim, deleteClaim, addDocToClaim, removeDocFromClaim } from './api/claims';
-import { getChangeOrders, createChangeOrder, updateChangeOrder, deleteChangeOrder } from './api/changeOrders';
+import { getChangeOrders, createChangeOrder, updateChangeOrder, deleteChangeOrder, addDocToChangeOrder, removeDocFromChangeOrder } from './api/changeOrders';
 import { getUsers, createUser, updateUser, deleteUser } from './api/users';
 import {
   getOrganizations, createOrganization, updateOrganization, deleteOrganization, assignOrgAdmin,
@@ -148,6 +148,7 @@ function Dashboard({ currentUser, onLogout }) {
   useEffect(() => {
     try { localStorage.setItem('claimDock.min', claimMin ? '1' : '0'); } catch { /* ignore */ }
   }, [claimMin]);
+  const [dockMode, setDockMode] = useState('claims'); // 'claims' | 'change-orders'
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
   // Persisted custom order of the document filter segments (drag to reorder).
@@ -279,6 +280,19 @@ function Dashboard({ currentUser, onLogout }) {
   const unlinkDoc = async (docId, claimId) => {
     setLinkBusy(true);
     try { await removeDocFromClaim(claimId, docId); docs.refresh(); claims.refresh(); }
+    catch (err) { setDeleteError(err.message); }
+    finally { setLinkBusy(false); }
+  };
+
+  const linkDocToChangeOrder = async (docId, coId) => {
+    setLinkBusy(true);
+    try { await addDocToChangeOrder(coId, docId); docs.refresh(); changeOrders.refresh(); }
+    catch (err) { setDeleteError(err.message); }
+    finally { setLinkBusy(false); }
+  };
+  const unlinkDocFromChangeOrder = async (docId, coId) => {
+    setLinkBusy(true);
+    try { await removeDocFromChangeOrder(coId, docId); docs.refresh(); changeOrders.refresh(); }
     catch (err) { setDeleteError(err.message); }
     finally { setLinkBusy(false); }
   };
@@ -649,9 +663,13 @@ function Dashboard({ currentUser, onLogout }) {
                       <ClaimDropPanel
                         documents={visibleDocs}
                         claims={visibleClaims}
-                        onAssign={linkDocToClaim}
-                        onUnassign={unlinkDoc}
-                        onCreateClaim={handleCreateClaimInline}
+                        changeOrders={changeOrders.items}
+                        dockMode={dockMode}
+                        onDockMode={setDockMode}
+                        onAssign={dockMode === 'claims' ? linkDocToClaim : linkDocToChangeOrder}
+                        onUnassign={dockMode === 'claims' ? unlinkDoc : unlinkDocFromChangeOrder}
+                        onCreateClaim={dockMode === 'claims' ? handleCreateClaimInline : null}
+                        onCreateChangeOrder={dockMode === 'change-orders' ? async (data) => { await createChangeOrder(data); changeOrders.refresh(); } : null}
                         defaultContract={docFilters.n_contrato?.length === 1 ? docFilters.n_contrato[0] : ''}
                         selectedClaimIds={selectedClaimIds}
                         onSelectClaim={(id) => setSelectedClaimIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))}
@@ -664,7 +682,7 @@ function Dashboard({ currentUser, onLogout }) {
                         onToggleFloat={() => setClaimFloat((v) => !v)}
                         minimized={claimMin}
                         onToggleMinimize={() => setClaimMin((v) => !v)}
-                        onOpenDetail={(c) => setClaimDetail(c)}
+                        onOpenDetail={(c) => dockMode === 'claims' ? setClaimDetail(c) : setCoDetail(c)}
                       />
                     </div>
                   ) : (
