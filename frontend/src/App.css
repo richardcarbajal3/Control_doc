@@ -24,8 +24,8 @@
   --shadow-lg: 0 10px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08);
 
   --tap-target: 44px;
-  --header-height: 64px;
-  --tabs-height: 48px;
+  --header-height: 56px;
+  --tabs-height: 42px;
 }
 
 * {
@@ -44,7 +44,10 @@ body {
 }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Header */
@@ -53,6 +56,7 @@ body {
   color: white;
   padding: 0 2rem;
   height: var(--header-height);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -87,6 +91,7 @@ body {
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
   height: var(--tabs-height);
+  flex-shrink: 0;
   align-items: stretch;
 }
 
@@ -127,17 +132,28 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.25rem 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 /* En la vista de documentos, la tabla ocupa todo el ancho disponible */
 .main.main-full {
   max-width: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.main.main-full .toolbar-sticky {
+  position: relative;
+  top: auto;
+  flex-shrink: 0;
 }
 
 /* Toolbar */
 .toolbar {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -145,14 +161,18 @@ body {
 .search-input {
   flex: 1;
   min-width: 0;
-  padding: 0.625rem 1rem;
+  padding: 0.45rem 0.85rem 0.45rem 2.1rem;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
-  background: white;
-  min-height: var(--tap-target);
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 0.65rem center;
+  background-size: 16px;
+  min-height: 36px;
 }
 
 .search-input:focus {
@@ -165,12 +185,12 @@ body {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.84rem;
   font-weight: 500;
-  padding: 0.625rem 1.25rem;
+  padding: 0.45rem 0.95rem;
   transition: background 0.18s, opacity 0.18s, transform 0.12s, box-shadow 0.18s;
   white-space: nowrap;
-  min-height: var(--tap-target);
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -232,6 +252,12 @@ body {
 
 .btn-delete:hover {
   background: #fee2e2;
+}
+
+/* On touch screens keep comfortable tap targets despite the compact desktop sizing. */
+@media (max-width: 640px) {
+  .btn { min-height: 42px; padding: 0.55rem 1.05rem; }
+  .search-input { min-height: 42px; padding: 0.55rem 0.9rem; }
 }
 
 /* Table */
@@ -974,8 +1000,8 @@ tr:hover {
 .report-filter select { padding: 0.3rem 0.4rem; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 140px; }
 
 /* ── Documents register + claims dock, side by side ─────────────────── */
-.docs-claim-split { display: flex; gap: 1rem; align-items: flex-start; }
-.docs-claim-main { flex: 1; min-width: 0; }
+.docs-claim-split { display: flex; gap: 1rem; align-items: stretch; flex: 1; min-height: 0; }
+.docs-claim-main { flex: 1; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .claims-dock {
   width: 340px; flex-shrink: 0;
   background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
@@ -1070,12 +1096,37 @@ tr:hover {
    La tabla usa width:100% + min-width para ocupar todo el espacio disponible;
    el scroll horizontal aparece automáticamente cuando el viewport es más angosto. */
 .doc-table-scroll {
-  max-height: calc(100vh - 12.5rem);
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   width: 100%;
+  /* Keep both scrollbars permanently visible so horizontal scrolling is
+     always discoverable, even where the OS uses auto-hiding overlay bars. */
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #eef2f7;
+  scrollbar-gutter: stable;
+}
+.doc-table-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.doc-table-scroll::-webkit-scrollbar-track {
+  background: #eef2f7;
+  border-radius: 8px;
+}
+.doc-table-scroll::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border: 3px solid #eef2f7;
+  border-radius: 8px;
+}
+.doc-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+.doc-table-scroll::-webkit-scrollbar-corner {
+  background: #eef2f7;
 }
 .app.header-collapsed-app .doc-table-scroll {
-  max-height: calc(100vh - 9.5rem);
+  max-height: none;
 }
 .doc-table thead th {
   position: sticky;
@@ -1093,27 +1144,79 @@ tr:hover {
   letter-spacing: 0.01em;
 }
 
+/* Densidad + acabado moderno (más marcado) de la tabla de documentos. */
+.doc-table-scroll {
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  background: #fff;
+}
+.doc-table th, .doc-table td { padding: 0.32rem 0.6rem; }
+.doc-table thead th {
+  background: linear-gradient(180deg, #f5f9fd 0%, #e9f1f9 100%);
+  color: #1e3a5f;
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  border-bottom: 2px solid var(--color-primary-light);
+  box-shadow: inset 0 -1px 0 rgba(45,90,142,0.22);
+}
+.doc-table tbody tr { transition: background 0.12s; }
+.doc-table tbody tr:nth-child(even) td { background: #fafbfc; }
+.doc-table tbody tr:hover td { background: #eaf2fc; }
+.doc-table tbody tr.doc-row-clickable:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+.doc-table tbody td { font-size: 0.82rem; }
+.doc-table td.transmittal-cell { color: var(--color-primary-light); }
+.doc-table .actions-cell { gap: 0.3rem; }
+.doc-table .actions-cell .btn-small {
+  padding: 0.24rem 0.55rem;
+  font-size: 0.76rem;
+  min-height: 28px;
+}
+
 /* Toolbar + filters stay fixed while the list scrolls. */
 .toolbar-sticky {
   position: sticky;
   top: 0;
   z-index: 30;
   background: var(--color-bg);
-  padding-top: 0.75rem;
-  margin-bottom: 0.5rem;
+  padding-top: 0.6rem;
+  margin-bottom: 0.4rem;
   box-shadow: 0 4px 10px -4px rgba(0,0,0,0.12);
 }
-.toolbar-sticky .toolbar { margin-bottom: 0.75rem; }
+.toolbar-sticky .toolbar { margin-bottom: 0.5rem; }
 .toolbar-sticky .report-filters { margin-bottom: 0.5rem; }
 
-/* Uniform filter boxes. */
-.doc-filters .report-filter { width: 156px; }
+/* Uniform filter boxes that flex to fill the panel and can be resized in
+   either direction (grow down AND sideways) so users maximise the space. */
+.doc-filters .report-filter {
+  flex: 1 1 156px; min-width: 156px; max-width: 100%;
+}
 .doc-filters .report-filter > span {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   font-weight: 600;
 }
+/* Header row of each filter: drag grip + label. */
+.doc-filters .report-filter-head {
+  display: flex; align-items: center; gap: 0.3rem; min-width: 0;
+}
+.doc-filters .report-filter-head .filter-label-text {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.filter-grip {
+  cursor: grab; color: #94a3b8; font-size: 0.85rem; line-height: 1;
+  flex-shrink: 0; user-select: none; padding: 0 0.1rem;
+}
+.filter-grip:active { cursor: grabbing; }
+.report-filter.filter-dragging { opacity: 0.45; }
+.report-filter.filter-drop-over {
+  outline: 2px dashed var(--color-accent); outline-offset: 2px; border-radius: 6px;
+}
 .doc-filters .report-filter select[multiple] {
-  width: 100%; min-width: 0; height: 88px;
+  width: 100%; min-width: 156px; height: 88px;
+  resize: both; overflow: auto;
+  min-height: 56px; max-height: 320px; max-width: 100%;
 }
 
 /* ── Claims dock as a fixed floating panel (always visible when active) ── */
@@ -1131,13 +1234,82 @@ tr:hover {
   max-height: none;
   border: none;
   border-left: 1px solid var(--color-border-soft);
-  border-radius: 0;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
   z-index: 40;
   overflow: auto;
   box-shadow: -8px 0 24px rgba(0,0,0,0.12);
   background: white;
 }
-.app.claim-active .docs-claim-split { display: block; }
+.app.claim-active .docs-claim-split { display: flex; }
+
+/* ── Dock title bar + window controls (movable / minimizable panel) ──── */
+.claim-dock-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: -0.7rem -0.9rem 0.6rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.8rem;
+  border-bottom: 1px solid var(--color-border-soft);
+  background: #f1f5f9;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  user-select: none;
+}
+.claim-dock-bar-title {
+  font-size: 0.8rem; font-weight: 700; color: #1e293b;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.claim-dock-grip { color: #94a3b8; font-size: 0.9rem; line-height: 1; }
+.claim-dock-ctls { display: flex; gap: 0.25rem; }
+.dock-ctl {
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--color-border-soft); border-radius: 6px;
+  background: #fff; color: #334155; cursor: pointer;
+  font-size: 0.9rem; line-height: 1; padding: 0;
+}
+.dock-ctl:hover { background: #e2e8f0; }
+.dock-ctl-on { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+.dock-ctl-on:hover { background: #24477a; }
+
+/* Floating window: positioned from inline left/top, draggable by its bar. */
+.claims-dock.claims-dock--floating {
+  position: fixed;
+  right: auto; bottom: auto;
+  width: 344px;
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+  z-index: 60;
+  resize: both;
+}
+.claims-dock.claims-dock--floating .claim-dock-body { overflow: auto; flex: 1; min-height: 0; }
+
+/* Minimized: only the title bar remains. */
+.claims-dock.claims-dock--min { resize: none; }
+.claims-dock.claims-dock--min .claim-dock-body { display: none; }
+.claims-dock.claims-dock--min .claim-dock-bar { margin-bottom: -0.7rem; border-bottom: none; border-radius: var(--radius-lg); }
+
+/* Floating mode reclaims the space the docked panel reserved → full-width table. */
+.app.claim-active.claim-floating .header { padding-right: 2rem; }
+.app.claim-active.claim-floating .tabs { padding-right: 1rem; }
+.app.claim-active.claim-floating .main { padding-right: 1.5rem; }
+.app.claim-active.claim-floating .claims-dock {
+  top: auto; right: auto; bottom: auto; left: auto;
+  height: auto; border-left: 1px solid var(--color-border-soft);
+}
+
+/* Docked + minimized: shrink to a bar in the top-right, free the table. */
+.app.claim-active.claim-min:not(.claim-floating) .header { padding-right: 2rem; }
+.app.claim-active.claim-min:not(.claim-floating) .tabs { padding-right: 1rem; }
+.app.claim-active.claim-min:not(.claim-floating) .main { padding-right: 1.5rem; }
+.app.claim-active.claim-min:not(.claim-floating) .claims-dock {
+  bottom: auto; height: auto; width: 240px;
+  border: 1px solid var(--color-border-soft); border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
 
 @media (max-width: 900px) {
   .app.claim-active .header,
@@ -1145,47 +1317,70 @@ tr:hover {
   .app.claim-active .main { padding-right: 0.875rem; }
   .app.claim-active .claims-dock {
     position: static; width: auto; border-left: none;
-    border: 1px solid var(--color-border-soft); border-radius: var(--radius-md); box-shadow: none;
+    border: 1px solid var(--color-border-soft); border-radius: var(--radius-lg); box-shadow: none;
   }
+  .claims-dock.claims-dock--floating { position: static; width: auto; resize: none; max-height: none; }
 }
 
-/* ── Filters as a dropdown popover (saves vertical space) ────────────── */
+/* ── Filters as a movable + resizable floating panel (Excel-like) ─────── */
 .filters-dropdown { position: relative; display: inline-block; }
 .filters-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 60;
   background: #fff;
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: 0.85rem;
+}
+/* Floating window: positioned from inline left/top, dragged by its bar,
+   resized by the user (resize: both). The body scrolls inside. */
+.filters-popover--float {
+  position: fixed;
+  z-index: 60;
   width: min(680px, 92vw);
+  max-width: 96vw;
+  min-width: 280px;
+  min-height: 160px;
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  resize: both;
   animation: slideModal 0.18s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
-.filters-popover-head { display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end; margin-bottom: 0.65rem; }
+.filters-popover-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.8rem;
+  background: #f1f5f9;
+  border-bottom: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  cursor: grab;
+  user-select: none;
+}
+.filters-popover-bar:active { cursor: grabbing; }
+.filters-popover-title {
+  font-size: 0.8rem; font-weight: 700; color: #1e293b;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.filters-popover-ctls { display: flex; align-items: center; gap: 0.4rem; }
+.filters-popover-body { padding: 0.85rem; overflow: auto; flex: 1; min-height: 0; }
+.filters-popover-body .doc-filters-hint { margin-bottom: 0.55rem; }
 .filters-popover .doc-filters { margin-bottom: 0; padding: 0; background: none; border: none; }
 
 @media (max-width: 480px) {
-  .filters-popover {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
+  .filters-popover--float {
+    left: 0 !important; top: auto !important; bottom: 0;
+    width: 100%; max-width: 100%;
+    height: auto !important; max-height: 80vh;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    max-height: 80vh;
-    overflow-y: auto;
+    resize: none;
   }
 }
 
 /* ── Highlight a claim's documents when its card is selected ─────────── */
-.doc-table tr.doc-row-highlight td {
+.doc-table tbody tr.doc-row-highlight td,
+.doc-table tbody tr.doc-row-highlight:hover td {
   background: #fef3c7;
 }
-.doc-table tr.doc-row-highlight td:first-child {
+.doc-table tbody tr.doc-row-highlight td:first-child {
   box-shadow: inset 4px 0 0 #f59e0b;
 }
 .claim-drop-card.claim-selected {
@@ -1217,6 +1412,37 @@ tr:hover {
 .claim-view-modes button.active { background: #1e3a5f; color: #fff; font-weight: 600; }
 
 /* ── Document detail (ficha del transmittal) ────────────────────────── */
+/* ── Floating claim detail panel (opened from ClaimDropPanel without tab change) ── */
+.claim-detail-float {
+  position: fixed;
+  z-index: 65;
+  background: #fff;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.22);
+  width: 680px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  resize: both;
+  overflow: hidden;
+}
+.claim-detail-float-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem 1rem 0.9rem;
+  min-height: 0;
+}
+.claim-detail-float .claim-dock-bar { border-bottom: 1px solid #e2e8f0; }
+.dock-ctl-detail {
+  font-size: 0.78rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  color: #1e3a5f;
+}
+.dock-ctl-detail:hover { background: #dbeafe; color: #1d4ed8; }
+
 .doc-row-clickable { cursor: pointer; }
 .ficha-grid {
   display: grid;
@@ -1231,3 +1457,135 @@ tr:hover {
 }
 .ficha-value { font-size: 0.9rem; color: #1f2937; }
 .ficha-desc { font-size: 0.88rem; color: #374151; margin: 0.4rem 0 0.75rem; }
+
+/* ── RFI Panel ────────────────────────────────────────────────────────── */
+.rfi-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 1.25rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.rfi-step {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 2px solid #e2e8f0;
+  color: #94a3b8;
+  background: #fff;
+}
+.rfi-step-done {
+  border-color: #22c55e;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+.rfi-step-late {
+  border-color: #ef4444;
+  color: #dc2626;
+  background: #fef2f2;
+}
+.rfi-step-pending {
+  border-color: #f59e0b;
+  color: #d97706;
+  background: #fffbeb;
+}
+.rfi-arrow {
+  color: #cbd5e1;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* pill extras */
+.pill-info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.pill-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ── Claim Timeline ───────────────────────────────────────────────────── */
+.claim-timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.claim-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.55rem;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 2px;
+  background: #e2e8f0;
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.1rem;
+}
+.timeline-item.timeline-last { margin-bottom: 0; }
+.timeline-dot {
+  position: absolute;
+  left: -1.07rem;
+  top: 0.45rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e3a5f;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #1e3a5f;
+}
+.timeline-content {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+}
+.timeline-date {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+.timeline-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1e3a5f;
+  margin-bottom: 0.2rem;
+}
+.timeline-icon { font-size: 1rem; }
+.timeline-desc {
+  font-size: 0.82rem;
+  color: #374151;
+  margin-bottom: 0.3rem;
+}
+.timeline-note {
+  font-size: 0.78rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-bottom: 0.3rem;
+}
+.timeline-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.timeline-resp {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* ── View toggle (timeline / table) ──────────────────────────────────── */
+.view-toggle {
+  display: flex;
+  gap: 0.25rem;
+}
