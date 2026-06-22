@@ -1589,3 +1589,36 @@ tr:hover {
   display: flex;
   gap: 0.25rem;
 }
+
+/* ── Dock mode switch (Claims / OC) ─────────────────────────────────── */
+.dock-mode-switch {
+  display: inline-flex;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0 0.35rem;
+}
+.dock-mode-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.dock-mode-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.dock-mode-btn.active { background: rgba(255,255,255,0.2); color: #fff; }
+.dock-count { font-size: 0.78rem; opacity: 0.75; }
+
+/* ── RFI row highlight & badge in DocumentList ───────────────────────── */
+.doc-row-rfi td { background: #fdfaf0; }
+.doc-row-rfi:hover td { background: #fef9e2 !important; }
+.doc-row-rfi td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
+.rfi-badge {
+  font-size: 0.68rem !important;
+  padding: 0.1rem 0.4rem !important;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
