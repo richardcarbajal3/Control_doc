@@ -430,7 +430,10 @@ function Dashboard({ currentUser, onLogout }) {
   const visibleDocs = useMemo(() => {
     const active = Object.entries(docFilters).filter(([, v]) => Array.isArray(v) && v.length);
     return active.length
-      ? docsWithFamilia.filter((d) => active.every(([k, vals]) => vals.includes(String(d[k] ?? ''))))
+      ? docsWithFamilia.filter((d) => active.every(([k, vals]) => {
+          const dv = String(d[k] ?? '').toUpperCase();
+          return vals.some((v) => String(v).toUpperCase() === dv);
+        }))
       : docsWithFamilia;
   }, [docsWithFamilia, docFilters]);
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
