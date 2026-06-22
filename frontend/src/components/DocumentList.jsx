@@ -1,5 +1,6 @@
 import { IMPORT_CONFIGS } from '../lib/importConfig';
 import { buildOnedriveUrl } from '../lib/onedriveUrl';
+import { isRfiDoc } from '../lib/isRfi';
 
 const FIELDS = IMPORT_CONFIGS.documents.fields;
 
@@ -73,7 +74,7 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
         </thead>
         <tbody>
           {documents.map((doc) => {
-            const isRfi = (doc.tipo_doc || '').trim().toUpperCase() === 'RFI';
+            const isRfi = isRfiDoc(doc);
             return (
               <tr
                 key={doc.id}
