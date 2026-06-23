@@ -1,6 +1,7 @@
 const BASE = `${import.meta.env.VITE_API_URL || ''}/api/classification-rules`;
 
-async function check(res) {
+async function check(resPromise) {
+  const res = await resPromise;
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Error ${res.status}`);

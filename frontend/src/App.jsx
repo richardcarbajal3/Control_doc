@@ -629,6 +629,15 @@ function Dashboard({ currentUser, onLogout }) {
                   )}
                 </div>
               )}
+              {tab === 'documents' && isAdmin && (
+                <button
+                  className={`btn btn-secondary`}
+                  onClick={() => setShowClassification(true)}
+                  title="Reglas de clasificación de documentos por familia"
+                >
+                  🗂 Clasificación
+                </button>
+              )}
               {tab === 'documents' && (
                 <button
                   className={`btn ${rfiOnly ? 'btn-primary' : 'btn-secondary'}`}
