@@ -173,7 +173,6 @@ function Dashboard({ currentUser, onLogout }) {
   }, [filterOrder]);
   const [dragFilter, setDragFilter] = useState(null);
   const [dragOverFilter, setDragOverFilter] = useState(null);
-  const [headerCollapsed, setHeaderCollapsed] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showFilterHelp, setShowFilterHelp] = useState(() => {
     try { return localStorage.getItem('docFilters.help') === '1'; } catch { return false; }
@@ -183,13 +182,6 @@ function Dashboard({ currentUser, onLogout }) {
   }, [showFilterHelp]);
   const filtersRef = useRef(null);
   const filtersPanel = useFloatingPanel('docFilters', { defaultPos: { x: 24, y: 132 }, enabled: showFilters });
-
-  // Auto-collapse the page header to a single line after 3s so the document
-  // list gets the maximum vertical space. The toggle button still works.
-  useEffect(() => {
-    const t = setTimeout(() => setHeaderCollapsed(true), 3000);
-    return () => clearTimeout(t);
-  }, []);
 
   // Close the filters popover when clicking outside of it.
   useEffect(() => {
@@ -504,21 +496,22 @@ function Dashboard({ currentUser, onLogout }) {
   };
 
   return (
-    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''} ${claimMode && claimFloat ? 'claim-floating' : ''} ${claimMode && claimMin ? 'claim-min' : ''} ${headerCollapsed ? 'header-collapsed-app' : ''}`}>
-      <header className={`header ${headerCollapsed ? 'header-collapsed' : ''}`}>
-        <div className="header-title">
-          <button
-            className="header-toggle"
-            onClick={() => setHeaderCollapsed((v) => !v)}
-            title={headerCollapsed ? 'Expandir encabezado' : 'Colapsar encabezado'}
-          >
-            {headerCollapsed ? '▾' : '▴'}
-          </button>
-          <div>
-            <h1>Control Doc</h1>
-            <p>Sistema de gestión contractual y documental</p>
-          </div>
+    <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''} ${claimMode && claimFloat ? 'claim-floating' : ''} ${claimMode && claimMin ? 'claim-min' : ''}`}>
+      <header className="header">
+        <div className="header-logo">
+          <h1>Control Doc</h1>
         </div>
+        <nav className="header-nav">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
+              onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRfiJourney(false); setRfiOnly(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
         <div className="user-box">
           <span className="user-email">{currentUser.email}</span>
           <span className="user-role">{currentUser.role}</span>
@@ -543,18 +536,6 @@ function Dashboard({ currentUser, onLogout }) {
           <button className="btn btn-secondary btn-small" onClick={onLogout}>Salir</button>
         </div>
       </header>
-
-      <nav className="tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRfiJourney(false); setRfiOnly(false); setRolesContract(null); setAssignAdminOrg(null); }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
 
       <main className={`main${tab === 'documents' ? ' main-full' : ''}`}>
         {tab === 'presentation' ? (
