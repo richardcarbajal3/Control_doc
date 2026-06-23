@@ -25,7 +25,6 @@
 
   --tap-target: 44px;
   --header-height: 56px;
-  --tabs-height: 42px;
 }
 
 * {
@@ -54,62 +53,58 @@ body {
 .header {
   background: linear-gradient(135deg, #1a3352 0%, #1e3a5f 60%, #24477a 100%);
   color: white;
-  padding: 0 2rem;
+  padding: 0 1rem 0 1.25rem;
   height: var(--header-height);
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  border-bottom: 2px solid rgba(255,255,255,0.1);
+  gap: 0;
 }
 
-.header h1 {
-  font-size: 1.25rem;
+.header-logo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-right: 1rem;
+  border-right: 1px solid rgba(255,255,255,0.15);
+  margin-right: 0.25rem;
+}
+
+.header-logo h1 {
+  font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-}
-
-.header p {
-  font-size: 0.78rem;
-  opacity: 0.7;
-  margin-top: 0.1rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* Tabs */
-.tabs {
-  background: var(--color-primary);
+/* Nav tabs inside the header */
+.header-nav {
   display: flex;
-  gap: 0;
-  padding: 0 1rem;
-  border-bottom: 2px solid rgba(255,255,255,0.1);
+  flex: 1;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
-  height: var(--tabs-height);
-  flex-shrink: 0;
   align-items: stretch;
+  min-width: 0;
 }
-
-.tabs::-webkit-scrollbar { display: none; }
+.header-nav::-webkit-scrollbar { display: none; }
 
 .tab-btn {
   background: transparent;
   border: none;
   color: rgba(255,255,255,0.6);
-  padding: 0 1rem;
-  font-size: 0.85rem;
+  padding: 0 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
-  min-height: var(--tap-target);
   display: flex;
   align-items: center;
   border-radius: 4px 4px 0 0;
@@ -873,11 +868,9 @@ tr:hover {
 @media (max-width: 480px) {
   :root {
     --header-height: 56px;
-    --tabs-height: 44px;
   }
 
-  .header h1 { font-size: 1.1rem; }
-  .header p { display: none; }
+  .header-logo h1 { font-size: 1rem; }
 
   .user-email { display: none; }
 
@@ -1053,44 +1046,6 @@ tr:hover {
 .doc-filters .report-filter select[multiple] option { padding: 0.1rem 0.3rem; }
 
 /* ── Collapsible header + sticky toolbar/filters + uniform filters ───── */
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-width: 0;
-  flex: 1;
-}
-
-.header-title > div {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.header-toggle {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.3);
-  color: #fff;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-
-.header-toggle:hover { background: rgba(255,255,255,0.15); }
-
-.header.header-collapsed {
-  height: 48px;
-  min-height: 48px;
-}
-
-.header.header-collapsed p { display: none; }
-.header.header-collapsed h1 { font-size: 1.1rem; }
 
 /* Context band: shows filtered contract fields above the table when hidden from columns. */
 .doc-context-band {
@@ -1152,9 +1107,6 @@ tr:hover {
 }
 .doc-table-scroll::-webkit-scrollbar-corner {
   background: #eef2f7;
-}
-.app.header-collapsed-app .doc-table-scroll {
-  max-height: none;
 }
 .doc-table thead th {
   position: sticky;
@@ -1288,8 +1240,7 @@ body.col-resizing * {
 }
 
 /* ── Claims dock as a fixed floating panel (always visible when active) ── */
-.app.claim-active .header,
-.app.claim-active .tabs { padding-right: 360px; }
+.app.claim-active .header { padding-right: 360px; }
 .app.claim-active .main { padding-right: 372px; }
 .app.claim-active .toolbar-sticky { z-index: 20; }
 
@@ -1363,7 +1314,6 @@ body.col-resizing * {
 
 /* Floating mode reclaims the space the docked panel reserved → full-width table. */
 .app.claim-active.claim-floating .header { padding-right: 2rem; }
-.app.claim-active.claim-floating .tabs { padding-right: 1rem; }
 .app.claim-active.claim-floating .main { padding-right: 1.5rem; }
 .app.claim-active.claim-floating .claims-dock {
   top: auto; right: auto; bottom: auto; left: auto;
@@ -1372,7 +1322,6 @@ body.col-resizing * {
 
 /* Docked + minimized: shrink to a bar in the top-right, free the table. */
 .app.claim-active.claim-min:not(.claim-floating) .header { padding-right: 2rem; }
-.app.claim-active.claim-min:not(.claim-floating) .tabs { padding-right: 1rem; }
 .app.claim-active.claim-min:not(.claim-floating) .main { padding-right: 1.5rem; }
 .app.claim-active.claim-min:not(.claim-floating) .claims-dock {
   bottom: auto; height: auto; width: 240px;
@@ -1381,7 +1330,6 @@ body.col-resizing * {
 
 @media (max-width: 900px) {
   .app.claim-active .header,
-  .app.claim-active .tabs,
   .app.claim-active .main { padding-right: 0.875rem; }
   .app.claim-active .claims-dock {
     position: static; width: auto; border-left: none;
