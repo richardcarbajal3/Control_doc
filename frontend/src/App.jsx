@@ -422,14 +422,27 @@ function Dashboard({ currentUser, onLogout }) {
     next.splice(to, 0, fromKey);
     setFilterOrder(next);
   };
+  // Cascading filter options (Excel-slicer style): each field shows only the
+  // values that remain possible given the OTHER active filters.
   const docFilterOptions = useMemo(() => {
+    const activeEntries = Object.entries(docFilters).filter(([, v]) => Array.isArray(v) && v.length);
     const opts = {};
     for (const f of DOC_FILTER_FIELDS) {
-      opts[f.key] = [...new Set(docsWithFamilia.map((d) => d[f.key]).filter((v) => v != null && v !== ''))]
+      // For field f, apply all active filters EXCEPT the one for f itself.
+      const otherFilters = activeEntries.filter(([k]) => k !== f.key);
+      const base = otherFilters.length
+        ? docsWithFamilia.filter((d) =>
+            otherFilters.every(([k, vals]) => {
+              const dv = String(d[k] ?? '').toUpperCase();
+              return vals.some((v) => String(v).toUpperCase() === dv);
+            })
+          )
+        : docsWithFamilia;
+      opts[f.key] = [...new Set(base.map((d) => d[f.key]).filter((v) => v != null && v !== ''))]
         .sort((a, b) => String(a).localeCompare(String(b), 'es'));
     }
     return opts;
-  }, [docsWithFamilia]);
+  }, [docsWithFamilia, docFilters]);
   // docFilters maps field -> array of selected values (multi-select). A field
   // with selections keeps docs whose value is any of them; fields combine (AND).
   const visibleDocs = useMemo(() => {
@@ -446,14 +459,16 @@ function Dashboard({ currentUser, onLogout }) {
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
-  // Contract-group fields that become redundant when filtered to a single value.
-  // Hide them from the table and show them as a context header band instead.
+  // Contract-group fields: n_contrato, empresa, contrato, descripcion_contrato are
+  // all related to the same contract record. If ANY of them is filtered to a single
+  // value the entire group is redundant in the table — hide all and show in the band.
   const CONTRACT_HEADER_KEYS = ['n_contrato', 'empresa', 'contrato', 'descripcion_contrato'];
   const hiddenDocKeys = useMemo(() => {
-    return CONTRACT_HEADER_KEYS.filter((k) => {
+    const groupFiltered = CONTRACT_HEADER_KEYS.some((k) => {
       const sel = docFilters[k];
       return Array.isArray(sel) && sel.length === 1;
     });
+    return groupFiltered ? CONTRACT_HEADER_KEYS : [];
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docFilters]);
 
