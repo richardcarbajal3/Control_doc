@@ -1162,7 +1162,9 @@ tr:hover {
   z-index: 5;
 }
 /* ── Redimensionado de columnas tipo Excel ──────────────────────────── */
-.doc-table th.resizable-th { position: relative; }
+/* OJO: no fijar position:relative en el th — sobrescribiría el position:sticky
+   del encabezado. Como sticky ya es un contexto posicionado, el tirador
+   absoluto se ancla correctamente al th igualmente. */
 .doc-table th.resizable-th .th-label {
   display: block;
   overflow: hidden;
