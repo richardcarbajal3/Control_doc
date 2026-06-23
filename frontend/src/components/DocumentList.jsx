@@ -1,6 +1,7 @@
 import { IMPORT_CONFIGS } from '../lib/importConfig';
 import { buildOnedriveUrl } from '../lib/onedriveUrl';
 import { isRfiDoc } from '../lib/isRfi';
+import { useColumnWidths } from '../lib/useColumnWidths';
 
 const FIELDS = IMPORT_CONFIGS.documents.fields;
 
@@ -42,6 +43,8 @@ function rfiStatusBadge(doc) {
 }
 
 export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick, onedriveBaseUrl }) {
+  const { widths, onResizeStart, resetColumn } = useColumnWidths('docTableColWidths', FIELDS);
+
   if (documents.length === 0) {
     return (
       <div className="empty-state">
@@ -59,15 +62,25 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
     <div className="doc-table-scroll">
       <table className="doc-table">
         <colgroup>
-          {FIELDS.map((f) => (
-            <col key={f.key} style={f.colWidth ? { width: `${f.colWidth}px` } : {}} />
-          ))}
+          {FIELDS.map((f) => {
+            const w = widths[f.key] || f.colWidth;
+            return <col key={f.key} style={w ? { width: `${w}px` } : {}} />;
+          })}
           <col style={{ width: '155px' }} />
         </colgroup>
         <thead>
           <tr>
             {FIELDS.map((f) => (
-              <th key={f.key} title={f.label}>{f.label}</th>
+              <th key={f.key} title={f.label} className="resizable-th">
+                <span className="th-label">{f.label}</span>
+                <span
+                  className="col-resizer"
+                  onMouseDown={onResizeStart(f.key)}
+                  onDoubleClick={() => resetColumn(f.key)}
+                  onClick={(e) => e.stopPropagation()}
+                  title="Arrastra para ajustar el ancho · doble clic para restablecer"
+                />
+              </th>
             ))}
             <th>Acciones</th>
           </tr>

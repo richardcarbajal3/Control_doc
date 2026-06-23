@@ -1133,6 +1133,44 @@ tr:hover {
   top: 0;
   z-index: 5;
 }
+/* ── Redimensionado de columnas tipo Excel ──────────────────────────── */
+.doc-table th.resizable-th { position: relative; }
+.doc-table th.resizable-th .th-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.doc-table th .col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  z-index: 6;
+}
+.doc-table th .col-resizer::after {
+  content: '';
+  position: absolute;
+  top: 18%;
+  right: 2px;
+  width: 2px;
+  height: 64%;
+  background: transparent;
+  border-radius: 1px;
+  transition: background 0.12s;
+}
+.doc-table th .col-resizer:hover::after {
+  background: var(--color-primary-light);
+}
+/* Mientras se arrastra, fija el cursor en toda la página y evita selección */
+body.col-resizing,
+body.col-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
 /* Columnas RTL: muestra el final del texto (truncación por la izquierda) */
 .doc-table td.cell-rtl {
   direction: rtl;
