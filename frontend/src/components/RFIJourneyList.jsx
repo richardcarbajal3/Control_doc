@@ -1,11 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { groupRfiJourneys } from '../lib/rfiJourney';
+import { buildOnedriveUrl } from '../lib/onedriveUrl';
 
 const fmt = (v) => {
   if (!v) return '—';
   const d = new Date(v);
   return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
 };
+
+// Resizable columns (the leading toggle column is fixed). Widths persist in
+// localStorage so the layout the user sets sticks across sessions.
+const COLUMNS = [
+  { key: 'documento', label: 'DOCUMENTO', width: 180 },
+  { key: 'descripcion', label: 'DESCRIPCIÓN', width: 300 },
+  { key: 'inicio', label: 'INICIO (RECIBIDO)', width: 128 },
+  { key: 'cierre', label: 'CIERRE (ENVIADO)', width: 128 },
+  { key: 'estado', label: 'ESTADO', width: 104 },
+  { key: 'dias', label: 'DÍAS', width: 60 },
+  { key: 'remisiones', label: 'REMISIONES', width: 96 },
+  { key: 'carpetas', label: 'CARPETAS', width: 96 },
+];
+const TOGGLE_W = 28;
+const MIN_W = 48;
+const LS_KEY = 'rfiJourney.colWidths';
+
+const defaultWidths = () => Object.fromEntries(COLUMNS.map((c) => [c.key, c.width]));
 
 function estadoPill(j) {
   if (j.estado === 'cerrado') {
@@ -20,9 +39,40 @@ function estadoPill(j) {
 
 // Collapses RFI transmittals into one journey per root document and shows, for
 // each, the recorrido: recibido (inicio) → enviado (cierre / atención).
-export default function RFIJourneyList({ documents, onRowClick }) {
+export default function RFIJourneyList({ documents, onRowClick, onedriveBaseUrl }) {
   const journeys = groupRfiJourneys(documents);
   const [expanded, setExpanded] = useState(() => new Set());
+  const [widths, setWidths] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+      return saved && typeof saved === 'object' ? { ...defaultWidths(), ...saved } : defaultWidths();
+    } catch { return defaultWidths(); }
+  });
+  const resizing = useRef(null);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(widths)); } catch { /* ignore */ }
+  }, [widths]);
+
+  const startResize = (e, key) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizing.current = { key, startX: e.clientX, startW: widths[key] ?? MIN_W };
+    const onMove = (ev) => {
+      const r = resizing.current;
+      if (!r) return;
+      const w = Math.max(MIN_W, r.startW + (ev.clientX - r.startX));
+      setWidths((s) => ({ ...s, [r.key]: w }));
+    };
+    const onUp = () => {
+      resizing.current = null;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+  const resetCol = (key) => setWidths((s) => ({ ...s, [key]: defaultWidths()[key] }));
 
   if (journeys.length === 0) {
     return (
@@ -39,53 +89,75 @@ export default function RFIJourneyList({ documents, onRowClick }) {
       return next;
     });
 
+  // OneDrive folder for a single transmittal (remisión), or contract folder.
+  const folderUrl = (d) =>
+    d.transmittal
+      ? buildOnedriveUrl(onedriveBaseUrl, d.n_contrato, d.status, d.transmittal)
+      : buildOnedriveUrl(onedriveBaseUrl, d.n_contrato);
+
+  const totalCols = COLUMNS.length + 1; // + toggle column
+
   return (
     <div className="doc-table-scroll">
       <table className="doc-table rfi-journey-table">
         <colgroup>
-          <col style={{ width: '28px' }} />
-          <col style={{ width: '90px' }} />
-          <col style={{ width: '150px' }} />
-          <col />
-          <col style={{ width: '120px' }} />
-          <col style={{ width: '120px' }} />
-          <col style={{ width: '92px' }} />
-          <col style={{ width: '56px' }} />
-          <col style={{ width: '90px' }} />
+          <col style={{ width: `${TOGGLE_W}px` }} />
+          {COLUMNS.map((c) => (
+            <col key={c.key} style={{ width: `${widths[c.key]}px` }} />
+          ))}
         </colgroup>
         <thead>
           <tr>
             <th />
-            <th title="Número de RFI">RFI</th>
-            <th title="Documento raíz (mismo en cada remisión)">DOCUMENTO</th>
-            <th>DESCRIPCIÓN</th>
-            <th title="Recibido — apertura del RFI">INICIO (RECIBIDO)</th>
-            <th title="Enviado — cierre / atención">CIERRE (ENVIADO)</th>
-            <th title="Estado del recorrido">ESTADO</th>
-            <th title="Días entre inicio y cierre">DÍAS</th>
-            <th title="Remisiones del mismo documento">REMISIONES</th>
+            {COLUMNS.map((c) => (
+              <th key={c.key} title={c.label}>
+                <span className="rfi-col-label">{c.label}</span>
+                <span
+                  className="col-resize-handle"
+                  title="Arrastra para ajustar · doble clic para restablecer"
+                  onPointerDown={(e) => startResize(e, c.key)}
+                  onDoubleClick={() => resetCol(c.key)}
+                />
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {journeys.map((j) => {
-            const isOpen = expanded.has(j.key);
-            return (
-              <FragmentRow
-                key={j.key}
-                journey={j}
-                isOpen={isOpen}
-                onToggle={() => toggle(j.key)}
-                onRowClick={onRowClick}
-              />
-            );
-          })}
+          {journeys.map((j) => (
+            <FragmentRow
+              key={j.key}
+              journey={j}
+              isOpen={expanded.has(j.key)}
+              onToggle={() => toggle(j.key)}
+              onRowClick={onRowClick}
+              onedriveBaseUrl={onedriveBaseUrl}
+              folderUrl={folderUrl}
+              totalCols={totalCols}
+            />
+          ))}
         </tbody>
       </table>
     </div>
   );
 }
 
-function FragmentRow({ journey: j, isOpen, onToggle, onRowClick }) {
+function FolderLink({ doc, label, icon, folderUrl }) {
+  if (!doc) return null;
+  return (
+    <a
+      href={folderUrl(doc)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="rfi-folder-link"
+      title={`${label}${doc.transmittal ? `: ${doc.transmittal}` : ''}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {icon}
+    </a>
+  );
+}
+
+function FragmentRow({ journey: j, isOpen, onToggle, onRowClick, onedriveBaseUrl, folderUrl, totalCols }) {
   return (
     <>
       <tr className="rfi-journey-row" onClick={() => onRowClick?.(j.inicio)}>
@@ -98,9 +170,8 @@ function FragmentRow({ journey: j, isOpen, onToggle, onRowClick }) {
             {isOpen ? '▾' : '▸'}
           </button>
         </td>
-        <td className="code-cell">{j.rfiNumber ? `RFI ${j.rfiNumber}` : '—'}</td>
         <td className="code-cell" title={j.root}>{j.root || '—'}</td>
-        <td title={j.descripcion}>{j.descripcion || '—'}</td>
+        <td className="cell-ellipsis" title={j.descripcion}>{j.descripcion || '—'}</td>
         <td>
           <span className="journey-leg journey-leg-in">{fmt(j.inicio?.fecha)}</span>
         </td>
@@ -114,10 +185,20 @@ function FragmentRow({ journey: j, isOpen, onToggle, onRowClick }) {
         <td className="rfi-journey-count">
           <span className="pill pill-soft">{j.docs.length}</span>
         </td>
+        <td className="rfi-journey-folders">
+          {onedriveBaseUrl && j.n_contrato ? (
+            <>
+              <FolderLink doc={j.inicio} label="Carpeta recibido (inicio)" icon="📥" folderUrl={folderUrl} />
+              {j.cierre && j.cierre.transmittal !== j.inicio?.transmittal && (
+                <FolderLink doc={j.cierre} label="Carpeta enviado (cierre)" icon="📤" folderUrl={folderUrl} />
+              )}
+            </>
+          ) : '—'}
+        </td>
       </tr>
       {isOpen && (
         <tr className="rfi-journey-detail-row">
-          <td colSpan={9}>
+          <td colSpan={totalCols}>
             <div className="rfi-journey-detail">
               <div className="rfi-flow">
                 <span className={`rfi-step ${j.inicio ? 'rfi-step-done' : 'rfi-step-pending'}`}>Recibido (inicio)</span>
@@ -128,7 +209,7 @@ function FragmentRow({ journey: j, isOpen, onToggle, onRowClick }) {
                 <thead>
                   <tr>
                     <th>FECHA</th><th># TRANSMITTAL</th><th>STATUS</th><th>STATUS G</th>
-                    <th>DESCRIPCIÓN</th><th>ESTATUS DE DOCUMENTO</th><th>ROL</th>
+                    <th>DESCRIPCIÓN</th><th>ESTATUS DE DOCUMENTO</th><th>ROL</th><th>CARPETA</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -148,6 +229,11 @@ function FragmentRow({ journey: j, isOpen, onToggle, onRowClick }) {
                         <td>{d.status_contratista || '—'}</td>
                         <td>
                           <span className={`pill ${rol === 'Inicio' ? 'pill-info' : rol === 'Cierre' ? 'pill-ok' : 'pill-soft'}`}>{rol}</span>
+                        </td>
+                        <td>
+                          {onedriveBaseUrl && d.n_contrato
+                            ? <FolderLink doc={d} label="Abrir carpeta de la remisión" icon="📁" folderUrl={folderUrl} />
+                            : '—'}
                         </td>
                       </tr>
                     );
