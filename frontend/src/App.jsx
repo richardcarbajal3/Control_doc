@@ -446,6 +446,17 @@ function Dashboard({ currentUser, onLogout }) {
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
+  // Contract-group fields that become redundant when filtered to a single value.
+  // Hide them from the table and show them as a context header band instead.
+  const CONTRACT_HEADER_KEYS = ['n_contrato', 'empresa', 'contrato', 'descripcion_contrato'];
+  const hiddenDocKeys = useMemo(() => {
+    return CONTRACT_HEADER_KEYS.filter((k) => {
+      const sel = docFilters[k];
+      return Array.isArray(sel) && sel.length === 1;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docFilters]);
+
   // When the documents are filtered by contract, the claims panel follows suit:
   // only claims belonging to the selected contract(s) remain visible.
   const visibleClaims = useMemo(() => {
@@ -710,6 +721,7 @@ function Dashboard({ currentUser, onLogout }) {
                           highlightClaimIds={claimView === 'highlight' ? selectedClaimIds : []}
                           onRowClick={handleDocRowClick}
                           onedriveBaseUrl={onedriveBaseUrl}
+                          hiddenKeys={hiddenDocKeys}
                         />
                       </div>
                       <ClaimDropPanel
@@ -738,7 +750,7 @@ function Dashboard({ currentUser, onLogout }) {
                       />
                     </div>
                   ) : (
-                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} onRowClick={handleDocRowClick} onedriveBaseUrl={onedriveBaseUrl} />
+                    <DocumentList documents={visibleDocs} onEdit={openEdit} onDelete={handleDeleteDoc} onRowClick={handleDocRowClick} onedriveBaseUrl={onedriveBaseUrl} hiddenKeys={hiddenDocKeys} />
                   )
                 )}
                 {tab === 'claims' && (
