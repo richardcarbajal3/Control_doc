@@ -42,8 +42,18 @@ function rfiStatusBadge(doc) {
   return <span className="pill pill-info rfi-badge" title="Pendiente de respuesta">RFI · Pendiente</span>;
 }
 
-export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick, onedriveBaseUrl }) {
+export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick, onedriveBaseUrl, hiddenKeys = [] }) {
+  const hiddenSet = new Set(hiddenKeys);
+  const visibleFields = FIELDS.filter((f) => !hiddenSet.has(f.key));
   const { widths, onResizeStart, resetColumn } = useColumnWidths('docTableColWidths', FIELDS);
+
+  // Build context band entries from the first document (all rows share these values when hidden).
+  const contextBand = hiddenKeys.length > 0 && documents.length > 0
+    ? FIELDS
+        .filter((f) => hiddenSet.has(f.key))
+        .map((f) => ({ label: f.label, value: documents[0][f.key] ?? '' }))
+        .filter((e) => e.value !== '')
+    : [];
 
   if (documents.length === 0) {
     return (
@@ -60,9 +70,19 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
 
   return (
     <div className="doc-table-scroll">
+      {contextBand.length > 0 && (
+        <div className="doc-context-band">
+          {contextBand.map((e) => (
+            <span key={e.label} className="doc-context-item">
+              <span className="doc-context-label">{e.label}</span>
+              <span className="doc-context-value">{e.value}</span>
+            </span>
+          ))}
+        </div>
+      )}
       <table className="doc-table">
         <colgroup>
-          {FIELDS.map((f) => {
+          {visibleFields.map((f) => {
             const w = widths[f.key] || f.colWidth;
             return <col key={f.key} style={w ? { width: `${w}px` } : {}} />;
           })}
@@ -70,7 +90,7 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
         </colgroup>
         <thead>
           <tr>
-            {FIELDS.map((f) => (
+            {visibleFields.map((f) => (
               <th key={f.key} title={f.label} className="resizable-th">
                 <span className="th-label">{f.label}</span>
                 <span
@@ -101,7 +121,7 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
                 onDragStart={draggable ? (e) => onRowDragStart(e, doc) : undefined}
                 onClick={onRowClick ? () => onRowClick(doc) : undefined}
               >
-                {FIELDS.map((f) => {
+                {visibleFields.map((f) => {
                   const text = formatValue(f, doc[f.key]);
                   const display = f.abbrev ? abbrevText(text, f.abbrev) : text;
                   const cls = [

@@ -1092,6 +1092,34 @@ tr:hover {
 .header.header-collapsed p { display: none; }
 .header.header-collapsed h1 { font-size: 1.1rem; }
 
+/* Context band: shows filtered contract fields above the table when hidden from columns. */
+.doc-context-band {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  padding: 0.45rem 0.9rem;
+  background: #eef4fb;
+  border-bottom: 1px solid #c7daf0;
+  font-size: 0.78rem;
+  align-items: center;
+}
+.doc-context-item {
+  display: flex;
+  gap: 0.3rem;
+  align-items: baseline;
+}
+.doc-context-label {
+  color: #5a7a99;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.7rem;
+}
+.doc-context-value {
+  color: #1e3a5f;
+  font-weight: 700;
+}
+
 /* Documents list: scroll container con sticky headers.
    La tabla usa width:100% + min-width para ocupar todo el espacio disponible;
    el scroll horizontal aparece automáticamente cuando el viewport es más angosto. */
