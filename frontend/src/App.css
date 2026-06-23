@@ -1624,6 +1624,40 @@ tr:hover {
 }
 
 /* ── RFI Journey ("recorrido") view ──────────────────────────────────── */
+.rfi-journey-table { table-layout: fixed; }
+.rfi-journey-table th { position: relative; user-select: none; }
+.rfi-col-label {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+.col-resize-handle:hover { background: #94a3b8; }
+.rfi-journey-table td.cell-ellipsis,
+.rfi-journey-table td.code-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rfi-journey-folders { white-space: nowrap; }
+.rfi-folder-link {
+  text-decoration: none;
+  font-size: 0.95rem;
+  margin-right: 0.2rem;
+  cursor: pointer;
+}
+.rfi-folder-link:hover { filter: brightness(1.15); }
 .rfi-journey-row { cursor: pointer; }
 .rfi-journey-row:hover td { background: #fef9e2; }
 .rfi-journey-toggle { text-align: center; }

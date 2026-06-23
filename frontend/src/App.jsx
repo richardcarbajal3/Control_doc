@@ -687,7 +687,7 @@ function Dashboard({ currentUser, onLogout }) {
             ) : (
               <>
                 {tab === 'documents' && rfiJourney && (
-                  <RFIJourneyList documents={visibleDocs} onRowClick={handleDocRowClick} />
+                  <RFIJourneyList documents={visibleDocs} onRowClick={handleDocRowClick} onedriveBaseUrl={onedriveBaseUrl} />
                 )}
                 {tab === 'documents' && !rfiJourney && (
                   claimMode ? (
