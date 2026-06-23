@@ -19,12 +19,14 @@ import UserForm from './components/UserForm';
 import OrgList from './components/OrgList';
 import OrgForm from './components/OrgForm';
 import OrgSettings from './components/OrgSettings';
+import SyncSettings from './components/SyncSettings';
 import AssignAdminForm from './components/AssignAdminForm';
 import Login from './components/Login';
 import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
 import RFIPanel from './components/RFIPanel';
+import RFIJourneyList from './components/RFIJourneyList';
 import ChangeOrderList from './components/ChangeOrderList';
 import ChangeOrderForm from './components/ChangeOrderForm';
 import ChangeOrderDetail from './components/ChangeOrderDetail';
@@ -32,13 +34,14 @@ import ClassificationRules from './components/ClassificationRules';
 import { IMPORT_CONFIGS } from './lib/importConfig';
 import { useFloatingPanel } from './lib/useFloatingPanel';
 import { applyClassification } from './lib/classify';
+import { isRfiDoc } from './lib/isRfi';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
 import { getProjects, createProject, updateProject, deleteProject } from './api/projects';
 import { getContracts, createContract, updateContract, deleteContract } from './api/contracts';
 import { getClaims, createClaim, updateClaim, deleteClaim, addDocToClaim, removeDocFromClaim } from './api/claims';
-import { getChangeOrders, createChangeOrder, updateChangeOrder, deleteChangeOrder } from './api/changeOrders';
+import { getChangeOrders, createChangeOrder, updateChangeOrder, deleteChangeOrder, addDocToChangeOrder, removeDocFromChangeOrder } from './api/changeOrders';
 import { getUsers, createUser, updateUser, deleteUser } from './api/users';
 import {
   getOrganizations, createOrganization, updateOrganization, deleteOrganization, assignOrgAdmin,
@@ -148,6 +151,11 @@ function Dashboard({ currentUser, onLogout }) {
   useEffect(() => {
     try { localStorage.setItem('claimDock.min', claimMin ? '1' : '0'); } catch { /* ignore */ }
   }, [claimMin]);
+  const [dockMode, setDockMode] = useState('claims'); // 'claims' | 'change-orders'
+  const [rfiOnly, setRfiOnly] = useState(false);
+  // Journey ("recorrido") view: collapse RFI transmittals into one row per root
+  // document showing recibido (inicio) → enviado (cierre / atención).
+  const [rfiJourney, setRfiJourney] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
   // Persisted custom order of the document filter segments (drag to reorder).
@@ -200,6 +208,7 @@ function Dashboard({ currentUser, onLogout }) {
   const [assignAdminOrg, setAssignAdminOrg] = useState(null);
   const [deleteError, setDeleteError] = useState('');
   const [showOrgSettings, setShowOrgSettings] = useState(false);
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
   const [onedriveBaseUrl, setOnedriveBaseUrl] = useState(currentUser.onedrive_base_url || null);
   const [classificationRules, setClassificationRules] = useState([]);
   const [showClassification, setShowClassification] = useState(false);
@@ -283,6 +292,19 @@ function Dashboard({ currentUser, onLogout }) {
     finally { setLinkBusy(false); }
   };
 
+  const linkDocToChangeOrder = async (docId, coId) => {
+    setLinkBusy(true);
+    try { await addDocToChangeOrder(coId, docId); docs.refresh(); changeOrders.refresh(); }
+    catch (err) { setDeleteError(err.message); }
+    finally { setLinkBusy(false); }
+  };
+  const unlinkDocFromChangeOrder = async (docId, coId) => {
+    setLinkBusy(true);
+    try { await removeDocFromChangeOrder(coId, docId); docs.refresh(); changeOrders.refresh(); }
+    catch (err) { setDeleteError(err.message); }
+    finally { setLinkBusy(false); }
+  };
+
   const handleSaveClaim = async (data) => {
     if (editing) await updateClaim(editing.id, data);
     else await createClaim(data);
@@ -309,8 +331,7 @@ function Dashboard({ currentUser, onLogout }) {
 
   // Contextual row-click: RFI → RFIPanel, else → DocumentDetail
   const handleDocRowClick = (doc) => {
-    const tipo = (doc.tipo_doc || '').toUpperCase().trim();
-    if (tipo === 'RFI') setDocDetail({ ...doc, _panel: 'rfi' });
+    if (isRfiDoc(doc)) setDocDetail({ ...doc, _panel: 'rfi' });
     else setDocDetail(doc);
   };
 
@@ -345,6 +366,7 @@ function Dashboard({ currentUser, onLogout }) {
   const tabConfig = {
     documents: { label: 'Documento', searchPlaceholder: 'Buscar documento (nro, descripción, contrato)...' },
     claims: { label: 'Claim', searchPlaceholder: 'Buscar claim (código, título, contrato)...' },
+    'change-orders': { label: 'Orden de Cambio', searchPlaceholder: 'Buscar por código, título o contrato...' },
     companies: { label: 'Empresa', searchPlaceholder: 'Buscar por RUC o razón social...' },
     projects: { label: 'Proyecto', searchPlaceholder: 'Buscar por código o nombre...' },
     contracts: { label: 'Contrato', searchPlaceholder: 'Buscar por código o título...' },
@@ -367,6 +389,7 @@ function Dashboard({ currentUser, onLogout }) {
   // Quick filters for the Documents tab. Each is a dropdown built from the
   // distinct values present, so the user can narrow the register fast.
   const DOC_FILTER_FIELDS = [
+    { key: 'tipo_doc', label: 'TIPO DOC' },
     { key: 'familia', label: 'FAMILIA' },
     { key: 'n_contrato', label: 'Contrato' },
     { key: 'status', label: 'STATUS' },
@@ -411,10 +434,15 @@ function Dashboard({ currentUser, onLogout }) {
   // with selections keeps docs whose value is any of them; fields combine (AND).
   const visibleDocs = useMemo(() => {
     const active = Object.entries(docFilters).filter(([, v]) => Array.isArray(v) && v.length);
-    return active.length
-      ? docsWithFamilia.filter((d) => active.every(([k, vals]) => vals.includes(String(d[k] ?? ''))))
+    let docs = active.length
+      ? docsWithFamilia.filter((d) => active.every(([k, vals]) => {
+          const dv = String(d[k] ?? '').toUpperCase();
+          return vals.some((v) => String(v).toUpperCase() === dv);
+        }))
       : docsWithFamilia;
-  }, [docsWithFamilia, docFilters]);
+    if (rfiOnly) docs = docs.filter(isRfiDoc);
+    return docs;
+  }, [docsWithFamilia, docFilters, rfiOnly]);
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
@@ -477,6 +505,15 @@ function Dashboard({ currentUser, onLogout }) {
               📁 OneDrive
             </button>
           )}
+          {isAdmin && (
+            <button
+              className="btn btn-secondary btn-small"
+              onClick={() => setShowSyncSettings(true)}
+              title="Configurar y ejecutar la sincronización del Excel"
+            >
+              🔄 Sincronización
+            </button>
+          )}
           <button className="btn btn-secondary btn-small" onClick={onLogout}>Salir</button>
         </div>
       </header>
@@ -486,7 +523,7 @@ function Dashboard({ currentUser, onLogout }) {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRolesContract(null); setAssignAdminOrg(null); }}
+            onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRfiJourney(false); setRfiOnly(false); setRolesContract(null); setAssignAdminOrg(null); }}
           >
             {t.label}
           </button>
@@ -603,6 +640,33 @@ function Dashboard({ currentUser, onLogout }) {
               )}
               {tab === 'documents' && (
                 <button
+                  className={`btn ${rfiOnly ? 'btn-primary' : 'btn-secondary'}`}
+                  title="Mostrar solo documentos RFI (detectados por código de documento)"
+                  onClick={() => setRfiOnly((v) => !v)}
+                >
+                  ❓ Solo RFI
+                </button>
+              )}
+              {tab === 'documents' && (
+                <button
+                  className={`btn ${rfiJourney ? 'btn-primary' : 'btn-secondary'}`}
+                  title="Recorrido del RFI: agrupa las remisiones del mismo documento (recibido → enviado)"
+                  onClick={() => setRfiJourney((v) => !v)}
+                >
+                  🧭 Recorrido RFI
+                </button>
+              )}
+              {tab === 'documents' && isAdmin && (
+                <button
+                  className={`btn btn-secondary`}
+                  onClick={() => setShowClassification(true)}
+                  title="Reglas de clasificación de documentos por familia"
+                >
+                  🗂 Clasificación
+                </button>
+              )}
+              {tab === 'documents' && (
+                <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => { setClaimMode((v) => !v); setSelectedClaimIds([]); setClaimView('highlight'); }}
                 >
@@ -631,7 +695,10 @@ function Dashboard({ currentUser, onLogout }) {
               <div className="loading">Cargando...</div>
             ) : (
               <>
-                {tab === 'documents' && (
+                {tab === 'documents' && rfiJourney && (
+                  <RFIJourneyList documents={visibleDocs} onRowClick={handleDocRowClick} />
+                )}
+                {tab === 'documents' && !rfiJourney && (
                   claimMode ? (
                     <div className="docs-claim-split">
                       <div className="docs-claim-main">
@@ -648,9 +715,13 @@ function Dashboard({ currentUser, onLogout }) {
                       <ClaimDropPanel
                         documents={visibleDocs}
                         claims={visibleClaims}
-                        onAssign={linkDocToClaim}
-                        onUnassign={unlinkDoc}
-                        onCreateClaim={handleCreateClaimInline}
+                        changeOrders={changeOrders.items}
+                        dockMode={dockMode}
+                        onDockMode={setDockMode}
+                        onAssign={dockMode === 'claims' ? linkDocToClaim : linkDocToChangeOrder}
+                        onUnassign={dockMode === 'claims' ? unlinkDoc : unlinkDocFromChangeOrder}
+                        onCreateClaim={dockMode === 'claims' ? handleCreateClaimInline : null}
+                        onCreateChangeOrder={dockMode === 'change-orders' ? async (data) => { await createChangeOrder(data); changeOrders.refresh(); } : null}
                         defaultContract={docFilters.n_contrato?.length === 1 ? docFilters.n_contrato[0] : ''}
                         selectedClaimIds={selectedClaimIds}
                         onSelectClaim={(id) => setSelectedClaimIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))}
@@ -663,7 +734,7 @@ function Dashboard({ currentUser, onLogout }) {
                         onToggleFloat={() => setClaimFloat((v) => !v)}
                         minimized={claimMin}
                         onToggleMinimize={() => setClaimMin((v) => !v)}
-                        onOpenDetail={(c) => setClaimDetail(c)}
+                        onOpenDetail={(c) => dockMode === 'claims' ? setClaimDetail(c) : setCoDetail(c)}
                       />
                     </div>
                   ) : (
@@ -829,7 +900,9 @@ function Dashboard({ currentUser, onLogout }) {
           onCancel={() => setShowOrgSettings(false)}
         />
       )}
-
+      {showSyncSettings && (
+        <SyncSettings isOwner={isOwner} onClose={() => setShowSyncSettings(false)} />
+      )}
       {showClassification && (
         <ClassificationRules
           onClose={() => setShowClassification(false)}
