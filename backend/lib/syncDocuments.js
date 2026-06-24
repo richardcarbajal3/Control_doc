@@ -14,11 +14,15 @@ const { parseDateValue, parseNumberValue } = require('./bulkInsert');
 // Columnas reales de la tabla documents que provienen del Excel, con su
 // encabezado esperado. El mapeo real es por nombre normalizado (ver normHeader).
 const COLUMN_BY_HEADER = {
-  'STATUS': 'status',
-  'STATUS G': 'status_g',
+  'TIPO DE FLUJO': 'status',
+  'STATUS': 'status', // alias por compatibilidad (encabezado anterior)
+  'ESTADO TRANSMITTAL': 'status_g',
+  'STATUS G': 'status_g', // alias por compatibilidad (encabezado anterior)
   'N° CONTRATO': 'n_contrato',
   'EMPRESA': 'empresa',
-  'CONTRATO': 'contrato',
+  'RUC': 'ruc',
+  'CONTRATO DC': 'contrato',
+  'CONTRATO': 'contrato', // alias por compatibilidad (encabezado anterior)
   'DESCRIPCIÓN CONTRATO': 'descripcion_contrato',
   'FECHA': 'fecha',
   '# TRANSMITTAL': 'transmittal',
@@ -120,7 +124,7 @@ async function upsertRows(rows, orgId) {
     );
     for (const d of cur) existing.set(keyOf(d.transmittal, d.documento_nro), d.id);
 
-    const cols = ['status', 'status_g', 'n_contrato', 'empresa', 'contrato', 'descripcion_contrato',
+    const cols = ['status', 'status_g', 'n_contrato', 'empresa', 'ruc', 'contrato', 'descripcion_contrato',
       'fecha', 'transmittal', 'item', 'referencia', 'documento_nro', 'rev', 'descripcion',
       'tipo_doc', 'status_contratista', 'responsable'];
 

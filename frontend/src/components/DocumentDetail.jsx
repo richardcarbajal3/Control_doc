@@ -35,17 +35,18 @@ export default function DocumentDetail({ doc, allDocuments = [], claims = [], on
           {field('# Transmittal', doc.transmittal)}
           {field('Fecha', fmt(doc.fecha))}
           <div className="ficha-field">
-            <span className="ficha-label">Estado (transmittal)</span>
+            <span className="ficha-label">Estado transmittal</span>
             <span className="ficha-value">
               {doc.is_pending
                 ? <span className="pill pill-warn">PENDIENTE{doc.dias_atraso > 0 ? ` · ${doc.dias_atraso} d` : ''}</span>
                 : <span className="pill pill-ok">{doc.status_g || 'ATENDIDO'}</span>}
             </span>
           </div>
-          {field('Envío (STATUS)', doc.status)}
+          {field('Tipo de flujo', doc.status)}
           {field('N° Contrato', doc.n_contrato)}
           {field('Empresa', doc.empresa)}
-          {field('Contrato', doc.contrato)}
+          {field('RUC', doc.ruc)}
+          {field('Contrato DC', doc.contrato)}
           {field('Referencia', doc.referencia)}
           {field('Responsable', doc.responsable)}
         </div>

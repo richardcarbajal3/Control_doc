@@ -5,14 +5,18 @@ export const IMPORT_CONFIGS = {
   documents: {
     label: 'Documentos',
     fields: [
-      // STATUS y STATUS G son del TRANSMITTAL (no del documento): STATUS = sentido
-      // del envío (enviado/recibido); STATUS G = atención (atendido/pendiente).
-      { key: 'status', label: 'STATUS', options: ['ENVIADO', 'RECIBIDO'], colWidth: 52 },
-      { key: 'status_g', label: 'STATUS G', options: ['ATENDIDO', 'PENDIENTE'], colWidth: 52 },
+      // TIPO DE FLUJO y ESTADO TRANSMITTAL son del TRANSMITTAL (no del documento):
+      // TIPO DE FLUJO = sentido del envío (enviado/recibido); ESTADO TRANSMITTAL =
+      // atención (atendido/pendiente). Las columnas en BD siguen siendo status y
+      // status_g; solo cambian las etiquetas.
+      { key: 'status', label: 'TIPO DE FLUJO', options: ['ENVIADO', 'RECIBIDO'], colWidth: 60 },
+      { key: 'status_g', label: 'ESTADO TRANSMITTAL', options: ['ATENDIDO', 'PENDIENTE'], colWidth: 72 },
       { key: 'n_contrato', label: 'N° CONTRATO', colWidth: 100 },
       { key: 'empresa', label: 'EMPRESA', colWidth: 52 },
+      { key: 'ruc', label: 'RUC', colWidth: 90 },
       // abbrev: 4 — muestra solo las primeras 4 letras en la tabla; texto completo al hover
-      { key: 'contrato', label: 'CONTRATO', colWidth: 80, abbrev: 4 },
+      // La columna en BD sigue siendo contrato; solo cambia la etiqueta a CONTRATO DC.
+      { key: 'contrato', label: 'CONTRATO DC', colWidth: 80, abbrev: 4 },
       { key: 'descripcion_contrato', label: 'DESCRIPCIÓN CONTRATO', type: 'textarea', colWidth: 108 },
       { key: 'fecha', label: 'FECHA', type: 'date', colWidth: 86 },
       // rtl:true → muestra el FINAL del nro de transmittal (la parte más discriminante)
