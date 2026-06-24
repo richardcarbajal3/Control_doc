@@ -12,6 +12,7 @@ export const IMPORT_CONFIGS = {
       { key: 'status', label: 'TIPO DE FLUJO', options: ['ENVIADO', 'RECIBIDO'], colWidth: 60 },
       { key: 'status_g', label: 'ESTADO TRANSMITTAL', options: ['ATENDIDO', 'PENDIENTE'], colWidth: 72 },
       { key: 'n_contrato', label: 'N° CONTRATO', colWidth: 100 },
+      { key: 'ruc', label: 'RUC', colWidth: 90 },
       { key: 'empresa', label: 'EMPRESA', colWidth: 52 },
       { key: 'ruc', label: 'RUC', colWidth: 90 },
       // abbrev: 4 — muestra solo las primeras 4 letras en la tabla; texto completo al hover
