@@ -664,15 +664,6 @@ function Dashboard({ currentUser, onLogout }) {
                   🧭 Recorrido RFI
                 </button>
               )}
-              {tab === 'documents' && isAdmin && (
-                <button
-                  className={`btn btn-secondary`}
-                  onClick={() => setShowClassification(true)}
-                  title="Reglas de clasificación de documentos por familia"
-                >
-                  🗂 Clasificación
-                </button>
-              )}
               {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
