@@ -56,17 +56,19 @@ router.get('/', async (req, res) => {
     const { search } = req.query;
     const params = [];
     const conds = [];
-    const oc = orgCond(req, params);
+    const oc = orgCond(req, params, 'documents.organization_id');
     if (oc) conds.push(oc);
     if (search) {
       params.push(`%${search}%`);
       const s = params.length;
-      conds.push(`(documento_nro ILIKE $${s} OR descripcion ILIKE $${s}
-                 OR n_contrato ILIKE $${s} OR empresa ILIKE $${s} OR transmittal ILIKE $${s})`);
+      conds.push(`(documents.documento_nro ILIKE $${s} OR documents.descripcion ILIKE $${s}
+                 OR documents.n_contrato ILIKE $${s} OR documents.empresa ILIKE $${s} OR documents.transmittal ILIKE $${s})`);
     }
-    const query = `SELECT *, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso,
-        COALESCE((SELECT array_agg(cd.claim_id) FROM claim_documents cd WHERE cd.document_id = documents.id), ARRAY[]::int[]) AS claim_ids
-      FROM documents`
+    const query = `SELECT documents.*, (${PENDING_SQL}) AS is_pending, ${DIAS_ATRASO_SQL} AS dias_atraso,
+        COALESCE((SELECT array_agg(cd.claim_id) FROM claim_documents cd WHERE cd.document_id = documents.id), ARRAY[]::int[]) AS claim_ids,
+        c.extra_data->>'x_ruc' AS ruc
+      FROM documents
+      LEFT JOIN contracts c ON c.code = documents.n_contrato AND c.organization_id = documents.organization_id`
       + (conds.length ? ' WHERE ' + conds.join(' AND ') : '')
       + ' ORDER BY fecha ASC NULLS LAST, transmittal ASC NULLS LAST, id ASC';
     const { rows } = await pool.query(query, params);

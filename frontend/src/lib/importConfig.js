@@ -12,8 +12,8 @@ export const IMPORT_CONFIGS = {
       { key: 'status', label: 'TIPO DE FLUJO', options: ['ENVIADO', 'RECIBIDO'], colWidth: 60 },
       { key: 'status_g', label: 'ESTADO TRANSMITTAL', options: ['ATENDIDO', 'PENDIENTE'], colWidth: 72 },
       { key: 'n_contrato', label: 'N° CONTRATO', colWidth: 100 },
-      { key: 'empresa', label: 'EMPRESA', colWidth: 52 },
       { key: 'ruc', label: 'RUC', colWidth: 90 },
+      { key: 'empresa', label: 'EMPRESA', colWidth: 52 },
       // abbrev: 4 — muestra solo las primeras 4 letras en la tabla; texto completo al hover
       // La columna en BD sigue siendo contrato; solo cambia la etiqueta a CONTRATO DC.
       { key: 'contrato', label: 'CONTRATO DC', colWidth: 80, abbrev: 4 },

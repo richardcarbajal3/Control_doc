@@ -384,6 +384,7 @@ function Dashboard({ currentUser, onLogout }) {
     { key: 'tipo_doc', label: 'TIPO DOC' },
     { key: 'familia', label: 'FAMILIA' },
     { key: 'n_contrato', label: 'Contrato' },
+    { key: 'ruc', label: 'RUC' },
     { key: 'status', label: 'STATUS' },
     { key: 'status_g', label: 'STATUS G' },
     { key: 'empresa', label: 'EMPRESA' },
@@ -454,7 +455,7 @@ function Dashboard({ currentUser, onLogout }) {
   // Contract-group fields: n_contrato, empresa, contrato, descripcion_contrato are
   // all related to the same contract record. If ANY of them is filtered to a single
   // value the entire group is redundant in the table — hide all and show in the band.
-  const CONTRACT_HEADER_KEYS = ['n_contrato', 'empresa', 'contrato', 'descripcion_contrato'];
+  const CONTRACT_HEADER_KEYS = ['n_contrato', 'ruc', 'empresa', 'contrato', 'descripcion_contrato'];
   const hiddenDocKeys = useMemo(() => {
     const groupFiltered = CONTRACT_HEADER_KEYS.some((k) => {
       const sel = docFilters[k];
