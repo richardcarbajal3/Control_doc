@@ -93,12 +93,12 @@ SaaS de gestión contractual y documental para empresas del sector minería y co
 
 ### 2.3 — Dashboard y Reportes
 
-- [~] Dashboard de presentación (pestaña "Presentación"): pendientes, atrasados, atendidos, pendientes por responsable y por STATUS G. *(Falta vista por proyecto y "claims abiertos".)*
+- [~] Dashboard de presentación (pestaña "Presentación"): pendientes, atrasados, atendidos, pendientes por responsable y por ESTADO TRANSMITTAL. *(Falta vista por proyecto y "claims abiertos".)*
 - [ ] Alertas de vencimiento de contratos y correspondencia
 - [~] Exportación a Excel / PDF por módulo *(CSV de pendientes implementado; falta PDF y resto de módulos.)*
 - [~] KPIs: días de atraso (regla SLA 3 días desde FECHA), máx. y promedio de atraso. *(Falta monto comprometido y días restantes de contrato.)*
 
-> **Regla de pendiente/atraso (implementada):** un documento está *pendiente* cuando `STATUS G` ≠ `ATENDIDO`; su vencimiento es **3 días** después de `FECHA`, y `días de atraso = hoy − (FECHA + 3)` mientras siga pendiente.
+> **Regla de pendiente/atraso (implementada):** un documento está *pendiente* cuando `ESTADO TRANSMITTAL` (columna BD `status_g`) ≠ `ATENDIDO`; su vencimiento es **3 días** después de `FECHA`, y `días de atraso = hoy − (FECHA + 3)` mientras siga pendiente.
 
 ### 2.4 — Notificaciones
 

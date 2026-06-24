@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS documents (
   status_g VARCHAR(60),
   n_contrato VARCHAR(120),
   empresa VARCHAR(255),
+  ruc VARCHAR(20),
   contrato VARCHAR(255),
   descripcion_contrato TEXT,
   fecha DATE,
@@ -115,6 +116,7 @@ ALTER TABLE documents ALTER COLUMN status DROP NOT NULL;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS status_g VARCHAR(60);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS n_contrato VARCHAR(120);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS empresa VARCHAR(255);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS ruc VARCHAR(20);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS contrato VARCHAR(255);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS descripcion_contrato TEXT;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS fecha DATE;

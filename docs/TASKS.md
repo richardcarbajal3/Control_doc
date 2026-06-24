@@ -205,8 +205,8 @@ Cada tarea es atómica, estimable y asignable a un desarrollador.
 - `documents` PUT pasó a actualización **parcial** (asignar un claim ya no borra el resto de campos).
 
 ### T-30 · Dashboard de presentación (pendientes y atrasos) · **Hecho**
-- API `/api/reports/documents`: totales, pendientes/atrasados/atendidos, por responsable y por STATUS G.
-- Regla: *pendiente* = `STATUS G` ≠ `ATENDIDO`; *días de atraso* = hoy − (`FECHA` + 3 días) mientras siga pendiente (SLA 3 días).
+- API `/api/reports/documents`: totales, pendientes/atrasados/atendidos, por responsable y por ESTADO TRANSMITTAL.
+- Regla: *pendiente* = `ESTADO TRANSMITTAL` (columna BD `status_g`) ≠ `ATENDIDO`; *días de atraso* = hoy − (`FECHA` + 3 días) mientras siga pendiente (SLA 3 días).
 - Frontend: pestaña Presentación con KPIs, pendientes por responsable, pendientes por días de atraso y exportación CSV.
 
 ### T-12/T-15/T-31 · Autenticación y roles · **Hecho (Fase 1)**

@@ -11,11 +11,14 @@ const XLSX = require('xlsx');
 
 // Campos de Documentos (espejo de frontend/src/lib/importConfig.js -> documents).
 const DOCUMENTS = [
-  { key: 'status', label: 'STATUS', type: 'texto', note: 'ENVIADO / RECIBIDO (del transmittal)' },
-  { key: 'status_g', label: 'STATUS G', type: 'texto', note: 'ATENDIDO / PENDIENTE (atención)' },
+  { key: 'status', label: 'TIPO DE FLUJO', type: 'texto',
+    note: 'Antes "STATUS". Columna BD: status. ENVIADO / RECIBIDO (del transmittal)' },
+  { key: 'status_g', label: 'ESTADO TRANSMITTAL', type: 'texto',
+    note: 'Antes "STATUS G". Columna BD: status_g. ATENDIDO / PENDIENTE (atención)' },
   { key: 'n_contrato', label: 'N° CONTRATO', type: 'texto' },
   { key: 'empresa', label: 'EMPRESA', type: 'texto' },
-  { key: 'contrato', label: 'CONTRATO', type: 'texto' },
+  { key: 'ruc', label: 'RUC', type: 'texto', note: 'RUC de la empresa' },
+  { key: 'contrato', label: 'CONTRATO DC', type: 'texto', note: 'Antes "CONTRATO". Columna BD: contrato' },
   { key: 'descripcion_contrato', label: 'DESCRIPCIÓN CONTRATO', type: 'texto' },
   { key: 'fecha', label: 'FECHA', type: 'fecha' },
   { key: 'transmittal', label: '# TRANSMITTAL', type: 'texto', unique: true },

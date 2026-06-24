@@ -24,7 +24,7 @@ export default function PresentationReport() {
 
   const exportPendientes = () => {
     if (!data) return;
-    const headers = ['DOCUMENTO NRO', 'DESCRIPCIÓN', 'RESPONSABLE', 'N° CONTRATO', 'FECHA', 'STATUS G', 'DÍAS ATRASO'];
+    const headers = ['DOCUMENTO NRO', 'DESCRIPCIÓN', 'RESPONSABLE', 'N° CONTRATO', 'FECHA', 'ESTADO TRANSMITTAL', 'DÍAS ATRASO'];
     const esc = (v) => {
       const s = String(v ?? '');
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -82,10 +82,10 @@ export default function PresentationReport() {
             </table>
           </div>
 
-          <h3 className="section-title">Por estado (STATUS G)</h3>
+          <h3 className="section-title">Por estado transmittal</h3>
           <div className="table-container">
             <table>
-              <thead><tr><th>STATUS G</th><th className="center">Cantidad</th></tr></thead>
+              <thead><tr><th>ESTADO TRANSMITTAL</th><th className="center">Cantidad</th></tr></thead>
               <tbody>
                 {data.byStatusG.map((s, i) => (
                   <tr key={i}><td>{s.status_g}</td><td className="center">{s.count}</td></tr>

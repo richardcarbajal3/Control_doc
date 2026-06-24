@@ -7,7 +7,7 @@ const router = Router();
 
 // Columns of the documents register, in the order shown in the UI.
 const DOC_COLUMNS = [
-  'status', 'status_g', 'n_contrato', 'empresa', 'contrato', 'descripcion_contrato',
+  'status', 'status_g', 'n_contrato', 'empresa', 'ruc', 'contrato', 'descripcion_contrato',
   'fecha', 'transmittal', 'item', 'referencia', 'documento_nro', 'rev', 'descripcion',
   'tipo_doc', 'status_contratista', 'responsable',
 ];
