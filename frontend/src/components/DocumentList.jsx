@@ -45,7 +45,7 @@ function rfiStatusBadge(doc) {
 export default function DocumentList({ documents, onEdit, onDelete, draggable = false, highlightClaimIds = [], onRowClick, onedriveBaseUrl, hiddenKeys = [] }) {
   const hiddenSet = new Set(hiddenKeys);
   const visibleFields = FIELDS.filter((f) => !hiddenSet.has(f.key));
-  const { widths, onResizeStart, resetColumn } = useColumnWidths('docTableColWidths', FIELDS);
+  const { widths, onResizeStart, resetColumn, resetAll } = useColumnWidths('docTableColWidths', FIELDS);
 
   // Build context band entries from the first document (all rows share these values when hidden).
   const contextBand = hiddenKeys.length > 0 && documents.length > 0
@@ -69,6 +69,17 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
   };
 
   return (
+    <>
+    <div className="doc-table-tools">
+      <button
+        type="button"
+        className="btn btn-small btn-secondary"
+        onClick={resetAll}
+        title="Restablecer el ancho de todas las columnas a su valor por defecto"
+      >
+        ↔ Restablecer columnas
+      </button>
+    </div>
     <div className="doc-table-scroll">
       {contextBand.length > 0 && (
         <div className="doc-context-band">
@@ -162,6 +173,7 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 

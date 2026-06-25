@@ -152,8 +152,6 @@ function Dashboard({ currentUser, onLogout }) {
     try { localStorage.setItem('claimDock.min', claimMin ? '1' : '0'); } catch { /* ignore */ }
   }, [claimMin]);
   const [dockMode, setDockMode] = useState('claims'); // 'claims' | 'change-orders'
-  // Journey ("recorrido") view: collapse RFI transmittals into one row per root
-  // document showing recibido (inicio) → enviado (cierre / atención).
   // Unified journey ("recorrido / trazabilidad") view: one row per root
   // document. RFI/RNC track by state over time; the rest track by revision.
   const [docJourney, setDocJourney] = useState(false);
