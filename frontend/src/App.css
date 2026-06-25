@@ -1080,7 +1080,12 @@ tr:hover {
 .doc-table {
   table-layout: fixed;
   width: 100%;
-  min-width: 1100px;
+  /* The 17 columns add up to ~1630px. Forcing the table to fit 100% of the
+     viewport would compress them (truncated text, no horizontal scroll).
+     min-width: max-content keeps every column at its real width and lets the
+     table overflow .doc-table-scroll, so the horizontal scrollbar appears at
+     normal zoom instead of only after zooming in. */
+  min-width: max-content;
 }
 .doc-table th, .doc-table td {
   white-space: nowrap;
