@@ -44,6 +44,10 @@ body {
 
 .app {
   height: 100vh;
+  /* Dynamic viewport height: matches the *visible* area on mobile, so the
+     bottom of the inner scroll containers (and their scrollbars) is never
+     hidden behind the browser's address bar / bottom chrome. */
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -832,6 +836,32 @@ tr:hover {
 
 /* ── Responsive / Mobile ──────────────────────────────────────────────── */
 @media (max-width: 640px) {
+  /* On phones the fixed-height "app shell" with nested overflow containers is
+     fragile (the inner scrollbars end up under the browser chrome and feel
+     unreachable). Let the whole page scroll naturally instead: the header and
+     toolbar scroll away with the content, which is the expected mobile feel. */
+  .app {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .main,
+  .main.main-full {
+    overflow: visible;
+    min-height: 0;
+    flex: 0 0 auto;
+  }
+  /* The documents table is wider than a phone screen, so keep its horizontal
+     scroll, but let the rows grow downward into the page scroll (no inner
+     vertical cap that would hide the bottom rows). */
+  .doc-table-scroll {
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
   .main {
     padding: 0.875rem 0.875rem;
   }
