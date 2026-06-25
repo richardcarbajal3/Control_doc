@@ -167,6 +167,12 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* min-width:0 + width:100% clampan este flex item al ancho de .app (viewport).
+     Sin esto, el min-width:auto por defecto del flex item deja que .main crezca
+     hasta el ancho del contenido (la tabla), desbordando el viewport y matando
+     el scroll horizontal de .doc-table-scroll. */
+  width: 100%;
+  min-width: 0;
 }
 .main.main-full .toolbar-sticky {
   position: relative;
@@ -884,6 +890,7 @@ tr:hover {
   .doc-table-scroll {
     flex: 0 0 auto;
     min-height: 0;
+    min-width: 0;
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
@@ -1079,13 +1086,16 @@ tr:hover {
 /* ── Compact documents table (no wrap) + multi-select filters ────────── */
 .doc-table {
   table-layout: fixed;
-  width: 100%;
-  /* The 17 columns add up to ~1630px. Forcing the table to fit 100% of the
-     viewport would compress them (truncated text, no horizontal scroll).
-     min-width: max-content keeps every column at its real width and lets the
-     table overflow .doc-table-scroll, so the horizontal scrollbar appears at
-     normal zoom instead of only after zooming in. */
-  min-width: max-content;
+  /* width: max-content makes the table exactly the sum of its column widths so
+     it keeps every column at its real width and overflows .doc-table-scroll,
+     which then shows the horizontal scrollbar.
+     OJO: NO usar `width: 100%` junto a `min-width: max-content` aquí. Esa
+     combinación, dentro de los contenedores flex con overflow:hidden
+     (.app / .main.main-full), provoca un bucle de tamaño intrínseco que
+     dispara el ancho de la tabla a ~1.000.000px y deja la tabla sin barra de
+     scroll (en escritorio no se puede desplazar; en móvil se arrastra
+     eternamente). Ver también min-width:0 en .main.main-full y .doc-table-scroll. */
+  width: max-content;
 }
 .doc-table th, .doc-table td {
   white-space: nowrap;
@@ -1143,6 +1153,10 @@ tr:hover {
 .doc-table-scroll {
   flex: 1;
   min-height: 0;
+  /* min-width:0 permite que este flex item se encoja al ancho de .main en vez de
+     crecer al ancho de la tabla; así la tabla desborda AQUÍ y aparece la barra
+     de scroll horizontal en lugar de empujar el layout fuera del viewport. */
+  min-width: 0;
   overflow: auto;
   width: 100%;
   /* Momentum / finger scrolling on touch devices. */
