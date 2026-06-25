@@ -53,6 +53,32 @@ body {
   overflow: hidden;
 }
 
+/* ── Subtle but always-visible scrollbars ────────────────────────────────
+   Wherever content overflows, show a slim, low-contrast scrollbar instead
+   of the OS auto-hiding overlay bars (which are easy to miss). Specific
+   containers like .doc-table-scroll override this with a more prominent bar. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: padding-box;
+}
+
 /* Header */
 .header {
   background: linear-gradient(135deg, #1a3352 0%, #1e3a5f 60%, #24477a 100%);
@@ -860,6 +886,7 @@ tr:hover {
     min-height: 0;
     overflow-x: auto;
     overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
   }
 
   .main {
@@ -1113,6 +1140,8 @@ tr:hover {
   min-height: 0;
   overflow: auto;
   width: 100%;
+  /* Momentum / finger scrolling on touch devices. */
+  -webkit-overflow-scrolling: touch;
   /* Keep both scrollbars permanently visible so horizontal scrolling is
      always discoverable, even where the OS uses auto-hiding overlay bars. */
   scrollbar-width: thin;
