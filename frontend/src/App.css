@@ -1080,12 +1080,14 @@ tr:hover {
 .doc-table {
   table-layout: fixed;
   width: 100%;
-  /* The 17 columns add up to ~1630px. Forcing the table to fit 100% of the
-     viewport would compress them (truncated text, no horizontal scroll).
-     min-width: max-content keeps every column at its real width and lets the
-     table overflow .doc-table-scroll, so the horizontal scrollbar appears at
-     normal zoom instead of only after zooming in. */
-  min-width: max-content;
+  /* table-layout:fixed + width:100% comprime las columnas proporcionalmente
+     para caber en el campo visual: sin ajustar, la tabla nunca desborda el
+     contenedor (sin barra horizontal en pantallas normales). Los anchos por
+     columna (colWidth / arrastre) actúan como peso relativo, así el
+     redimensionado redistribuye el espacio dentro de la vista y persiste.
+     El min-width sólo permite scroll horizontal en contenedores muy angostos
+     para que las columnas no queden ilegibles. */
+  min-width: 1100px;
 }
 .doc-table th, .doc-table td {
   white-space: nowrap;
