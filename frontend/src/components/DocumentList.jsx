@@ -55,6 +55,16 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
         .filter((e) => e.value !== '')
     : [];
 
+  // Las columnas se dimensionan en porcentaje (peso relativo): se normaliza el
+  // ancho de cada columna sobre el total para que sumen 100%. Así la tabla
+  // (table-layout:fixed + width:100%) cabe siempre en el campo visual sin
+  // desbordarse, y al ajustar una columna el resto se redistribuye dentro de la
+  // vista. La columna de Acciones entra en el reparto con un peso fijo.
+  const ACTIONS_WEIGHT = 155;
+  const totalWeight =
+    visibleFields.reduce((sum, f) => sum + (widths[f.key] || f.colWidth || 80), 0) + ACTIONS_WEIGHT;
+  const pct = (w) => `${((w / totalWeight) * 100).toFixed(4)}%`;
+
   if (documents.length === 0) {
     return (
       <div className="empty-state">
@@ -94,10 +104,10 @@ export default function DocumentList({ documents, onEdit, onDelete, draggable = 
       <table className="doc-table">
         <colgroup>
           {visibleFields.map((f) => {
-            const w = widths[f.key] || f.colWidth;
-            return <col key={f.key} style={w ? { width: `${w}px` } : {}} />;
+            const w = widths[f.key] || f.colWidth || 80;
+            return <col key={f.key} style={{ width: pct(w) }} />;
           })}
-          <col style={{ width: '155px' }} />
+          <col style={{ width: pct(ACTIONS_WEIGHT) }} />
         </colgroup>
         <thead>
           <tr>

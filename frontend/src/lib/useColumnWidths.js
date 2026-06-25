@@ -54,8 +54,12 @@ export function useColumnWidths(storageKey, fields) {
   const onResizeStart = useCallback((key) => (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Las columnas se renderizan en porcentaje (peso relativo), así que el ancho
+    // almacenado es un "peso", no el px renderizado. Arrancar el arrastre desde
+    // el peso guardado (no desde th.offsetWidth) evita un salto al iniciar y
+    // mantiene la escala consistente con el resto de columnas.
     const th = e.currentTarget.closest('th');
-    const startWidth = th ? th.offsetWidth : (widths[key] || 80);
+    const startWidth = widths[key] || (th ? th.offsetWidth : 80);
     drag.current = { key, startX: e.clientX, startWidth };
 
     const onMove = (ev) => {

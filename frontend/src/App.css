@@ -1086,16 +1086,19 @@ tr:hover {
 /* ── Compact documents table (no wrap) + multi-select filters ────────── */
 .doc-table {
   table-layout: fixed;
-  /* width: max-content makes the table exactly the sum of its column widths so
-     it keeps every column at its real width and overflows .doc-table-scroll,
-     which then shows the horizontal scrollbar.
-     OJO: NO usar `width: 100%` junto a `min-width: max-content` aquí. Esa
-     combinación, dentro de los contenedores flex con overflow:hidden
-     (.app / .main.main-full), provoca un bucle de tamaño intrínseco que
-     dispara el ancho de la tabla a ~1.000.000px y deja la tabla sin barra de
-     scroll (en escritorio no se puede desplazar; en móvil se arrastra
-     eternamente). Ver también min-width:0 en .main.main-full y .doc-table-scroll. */
-  width: max-content;
+  width: 100%;
+  /* Las columnas se dimensionan en PORCENTAJE (ver colgroup en DocumentList):
+     los anchos por columna (colWidth / arrastre) actúan como peso relativo y se
+     normalizan para sumar 100%. Con table-layout:fixed + width:100% la tabla
+     mide exactamente el ancho del contenedor, así que SIN ajustar nunca desborda
+     el campo visual (sin barra horizontal). El redimensionado redistribuye el
+     espacio entre columnas dentro de la vista y persiste en localStorage.
+     OJO: NO volver a `width: max-content` ni `min-width: max-content`. Esas
+     palabras clave intrínsecas, dentro de los contenedores flex con
+     overflow:hidden (.app / .main.main-full), disparan el ancho de la tabla a
+     ~1.000.000px. Se conservan los min-width:0 de .main.main-full y
+     .doc-table-scroll que clampan al viewport. */
+  min-width: 0;
 }
 .doc-table th, .doc-table td {
   white-space: nowrap;
