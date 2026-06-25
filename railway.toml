@@ -3,7 +3,9 @@ builder = "NIXPACKS"
 
 [build.nixpacks]
 installCmd = "npm install"
-buildCmd = "npm run build"
+# Borra el dist previo para garantizar un build de frontend limpio en cada
+# deploy (evita servir un dist cacheado/antiguo).
+buildCmd = "rm -rf frontend/dist && npm run build"
 
 [deploy]
 startCommand = "node backend/server.js"

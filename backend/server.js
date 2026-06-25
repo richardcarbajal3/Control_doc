@@ -58,10 +58,23 @@ const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
 const indexHtml = path.join(frontendDist, 'index.html');
 
 if (fs.existsSync(frontendDist)) {
-  app.use(express.static(frontendDist));
+  // Cache strategy: hashed asset files (index-XXXX.js/.css) never change for a
+  // given hash, so cache them aggressively; but index.html must NOT be cached,
+  // otherwise the browser keeps loading an old build that references stale
+  // asset hashes after a deploy ("I deployed but the page looks the same").
+  app.use(express.static(frontendDist, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
 
   // SPA fallback: solo para rutas que NO son /api
   app.get(/^(?!\/api).*/, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(indexHtml);
   });
 }
