@@ -1799,3 +1799,37 @@ body.col-resizing * {
 }
 .rfi-journey-subtable tr.doc-row-clickable { cursor: pointer; }
 .rfi-journey-subtable tr.doc-row-clickable:hover td { background: #f8fafc; }
+
+/* ── Aviso de versión nueva (auto-update) ───────────────────────────────── */
+.update-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 1rem;
+  /* Respeta el área segura inferior en móviles con notch/gestos. */
+  padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.85rem;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.18);
+  animation: slideUpBanner 0.25s ease;
+}
+@keyframes slideUpBanner {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.update-banner-text { font-weight: 600; }
+.update-banner-btn {
+  background: #fff;
+  color: var(--color-primary);
+  font-weight: 700;
+  border: none;
+}
+.update-banner-btn:hover { background: #eaf2fc; opacity: 1; }

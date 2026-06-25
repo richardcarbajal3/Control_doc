@@ -35,6 +35,7 @@ import { IMPORT_CONFIGS } from './lib/importConfig';
 import { useFloatingPanel } from './lib/useFloatingPanel';
 import { applyClassification } from './lib/classify';
 import { isRfiDoc } from './lib/isRfi';
+import { startVersionWatch } from './lib/versionCheck';
 
 import { getDocuments, createDocument, updateDocument, deleteDocument } from './api/documents';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from './api/companies';
@@ -80,11 +81,47 @@ function useModule(fetchFn, deps = []) {
   return { items, loading, search, setSearch, refresh: fetch };
 }
 
+// Vigila si se desplegó una versión nueva del frontend. Cuando la detecta,
+// muestra un aviso y recarga sola — el usuario no tiene que saber cuándo
+// actualizar. La recarga automática se pospone si hay un formulario/modal
+// abierto (presencia de .modal-overlay), para no interrumpir ni perder datos.
+function useVersionWatch() {
+  const [updateReady, setUpdateReady] = useState(false);
+
+  useEffect(() => startVersionWatch(() => setUpdateReady(true)), []);
+
+  useEffect(() => {
+    if (!updateReady) return undefined;
+    const id = setInterval(() => {
+      if (!document.querySelector('.modal-overlay')) {
+        window.location.reload();
+      }
+    }, 10000);
+    return () => clearInterval(id);
+  }, [updateReady]);
+
+  return updateReady;
+}
+
+function UpdateBanner() {
+  return (
+    <div className="update-banner" role="alert">
+      <span className="update-banner-text">
+        🔄 Hay una versión nueva disponible.
+      </span>
+      <button className="btn btn-small update-banner-btn" onClick={() => window.location.reload()}>
+        Actualizar ahora
+      </button>
+    </div>
+  );
+}
+
 // Top-level: handle the session. The data hooks live in <Dashboard> so they
 // only mount (and fire API calls) once the user is authenticated.
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  const updateReady = useVersionWatch();
 
   useEffect(() => {
     const onUnauth = () => setUser(null);
@@ -100,12 +137,21 @@ export default function App() {
 
   const onLogout = () => { logout(); setUser(null); };
 
-  if (checking) return <div className="loading">Cargando…</div>;
-  if (!user) return <Login onLoggedIn={setUser} />;
-  if (user.role !== 'superadmin' && user.organization_id == null) {
-    return <NoAccess user={user} onLogout={onLogout} />;
+  let content;
+  if (checking) content = <div className="loading">Cargando…</div>;
+  else if (!user) content = <Login onLoggedIn={setUser} />;
+  else if (user.role !== 'superadmin' && user.organization_id == null) {
+    content = <NoAccess user={user} onLogout={onLogout} />;
+  } else {
+    content = <Dashboard currentUser={user} onLogout={onLogout} />;
   }
-  return <Dashboard currentUser={user} onLogout={onLogout} />;
+
+  return (
+    <>
+      {updateReady && <UpdateBanner />}
+      {content}
+    </>
+  );
 }
 
 // Shown to a self-registered user who has not been assigned to a client yet.
