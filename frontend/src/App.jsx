@@ -153,7 +153,6 @@ function Dashboard({ currentUser, onLogout }) {
     try { localStorage.setItem('claimDock.min', claimMin ? '1' : '0'); } catch { /* ignore */ }
   }, [claimMin]);
   const [dockMode, setDockMode] = useState('claims'); // 'claims' | 'change-orders'
-  const [rfiOnly, setRfiOnly] = useState(false);
   // Journey ("recorrido") view: collapse RFI transmittals into one row per root
   // document showing recibido (inicio) → enviado (cierre / atención).
   const [rfiJourney, setRfiJourney] = useState(false);
@@ -450,9 +449,8 @@ function Dashboard({ currentUser, onLogout }) {
           return vals.some((v) => String(v).toUpperCase() === dv);
         }))
       : docsWithFamilia;
-    if (rfiOnly) docs = docs.filter(isRfiDoc);
     return docs;
-  }, [docsWithFamilia, docFilters, rfiOnly]);
+  }, [docsWithFamilia, docFilters]);
   const anyDocFilter = Object.values(docFilters).some((v) => Array.isArray(v) && v.length);
   const activeFilterCount = Object.values(docFilters).filter((v) => Array.isArray(v) && v.length).length;
 
@@ -648,15 +646,6 @@ function Dashboard({ currentUser, onLogout }) {
                   title="Reglas de clasificación de documentos por familia"
                 >
                   🗂 Clasificación
-                </button>
-              )}
-              {tab === 'documents' && (
-                <button
-                  className={`btn ${rfiOnly ? 'btn-primary' : 'btn-secondary'}`}
-                  title="Mostrar solo documentos RFI (detectados por código de documento)"
-                  onClick={() => setRfiOnly((v) => !v)}
-                >
-                  ❓ Solo RFI
                 </button>
               )}
               {tab === 'documents' && (
