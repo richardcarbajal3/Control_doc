@@ -1177,6 +1177,14 @@ tr:hover {
   top: 0;
   z-index: 5;
 }
+/* Thin bar above the documents table with the "reset column widths" action.
+   flex:0 0 auto so it never steals space from the scrollable table below. */
+.doc-table-tools {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.4rem;
+}
 /* ── Redimensionado de columnas tipo Excel ──────────────────────────── */
 /* OJO: no fijar position:relative en el th — sobrescribiría el position:sticky
    del encabezado. Como sticky ya es un contexto posicionado, el tirador

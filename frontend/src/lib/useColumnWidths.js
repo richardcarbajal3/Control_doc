@@ -40,7 +40,10 @@ export function useColumnWidths(storageKey, fields) {
     const onMove = (ev) => {
       if (!drag.current) return;
       const delta = ev.clientX - drag.current.startX;
-      const next = Math.max(32, Math.round(drag.current.startWidth + delta));
+      // Clamp between a usable minimum and a sane maximum so a column can never
+      // run away off-screen (which would also hide its own resize grip).
+      const raw = Math.round(drag.current.startWidth + delta);
+      const next = Math.min(640, Math.max(48, raw));
       setWidths((w) => ({ ...w, [drag.current.key]: next }));
     };
     const onUp = () => {
