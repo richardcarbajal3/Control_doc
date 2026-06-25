@@ -3,9 +3,9 @@ builder = "NIXPACKS"
 
 [build.nixpacks]
 installCmd = "npm install"
-# Borra el dist previo para garantizar un build de frontend limpio en cada
-# deploy (evita servir un dist cacheado/antiguo).
-buildCmd = "rm -rf frontend/dist && npm run build"
+# Vite ya vacía frontend/dist en cada build (emptyOutDir), así que basta con
+# el build normal. Se mantiene simple y conocido para no romper el deploy.
+buildCmd = "npm run build"
 
 [deploy]
 startCommand = "node backend/server.js"
