@@ -26,8 +26,7 @@ import PasteGrid from './components/PasteGrid';
 import ReportView from './components/ReportView';
 import PresentationReport from './components/PresentationReport';
 import RFIPanel from './components/RFIPanel';
-import RFIJourneyList from './components/RFIJourneyList';
-import PlanosJourneyList from './components/PlanosJourneyList';
+import DocJourneyList from './components/DocJourneyList';
 import ChangeOrderList from './components/ChangeOrderList';
 import ChangeOrderForm from './components/ChangeOrderForm';
 import ChangeOrderDetail from './components/ChangeOrderDetail';
@@ -155,10 +154,9 @@ function Dashboard({ currentUser, onLogout }) {
   const [dockMode, setDockMode] = useState('claims'); // 'claims' | 'change-orders'
   // Journey ("recorrido") view: collapse RFI transmittals into one row per root
   // document showing recibido (inicio) → enviado (cierre / atención).
-  const [rfiJourney, setRfiJourney] = useState(false);
-  // Planos & Procedimientos view: collapse every revision of a document into one
-  // row per base (documento_nro), where the highest revision governs the state.
-  const [planosJourney, setPlanosJourney] = useState(false);
+  // Unified journey ("recorrido / trazabilidad") view: one row per root
+  // document. RFI/RNC track by state over time; the rest track by revision.
+  const [docJourney, setDocJourney] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [docFilters, setDocFilters] = useState({});
   // Persisted custom order of the document filter segments (drag to reorder).
@@ -650,20 +648,11 @@ function Dashboard({ currentUser, onLogout }) {
               )}
               {tab === 'documents' && (
                 <button
-                  className={`btn ${rfiJourney ? 'btn-primary' : 'btn-secondary'}`}
-                  title="Recorrido del RFI: agrupa las remisiones del mismo documento (recibido → enviado)"
-                  onClick={() => setRfiJourney((v) => { const next = !v; if (next) setPlanosJourney(false); return next; })}
+                  className={`btn ${docJourney ? 'btn-primary' : 'btn-secondary'}`}
+                  title="Recorrido / trazabilidad: agrupa por documento raíz. RFI/RNC siguen el estado en el tiempo; los demás siguen la revisión (manda la mayor: A<B<…<0<1<…). Excluye documentos informativos."
+                  onClick={() => setDocJourney((v) => !v)}
                 >
-                  🧭 Recorrido RFI
-                </button>
-              )}
-              {tab === 'documents' && (
-                <button
-                  className={`btn ${planosJourney ? 'btn-primary' : 'btn-secondary'}`}
-                  title="Planos & Procedimientos: agrupa por documento; cada revisión es una línea y manda la revisión mayor (A<B<…<0<1<…)"
-                  onClick={() => setPlanosJourney((v) => { const next = !v; if (next) setRfiJourney(false); return next; })}
-                >
-                  📐 Planos & Procedimientos
+                  🧭 Recorrido / Trazabilidad
                 </button>
               )}
               {tab === 'documents' && (
@@ -696,13 +685,10 @@ function Dashboard({ currentUser, onLogout }) {
               <div className="loading">Cargando...</div>
             ) : (
               <>
-                {tab === 'documents' && planosJourney && (
-                  <PlanosJourneyList documents={visibleDocs} onRowClick={handleDocRowClick} onedriveBaseUrl={onedriveBaseUrl} />
+                {tab === 'documents' && docJourney && (
+                  <DocJourneyList documents={visibleDocs} onRowClick={handleDocRowClick} onedriveBaseUrl={onedriveBaseUrl} />
                 )}
-                {tab === 'documents' && rfiJourney && !planosJourney && (
-                  <RFIJourneyList documents={visibleDocs} onRowClick={handleDocRowClick} onedriveBaseUrl={onedriveBaseUrl} />
-                )}
-                {tab === 'documents' && !rfiJourney && !planosJourney && (
+                {tab === 'documents' && !docJourney && (
                   claimMode ? (
                     <div className="docs-claim-split">
                       <div className="docs-claim-main">
