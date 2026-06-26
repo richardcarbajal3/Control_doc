@@ -25,12 +25,13 @@ function cookieHeader(jar) {
 
 // fetch que sigue redirecciones manualmente acumulando cookies en `jar`, para
 // emular `curl -L -c jar -b jar`. Devuelve la respuesta final (no redirección).
-async function fetchFollowing(url, jar, { maxRedirects = 10, method = 'GET' } = {}) {
+async function fetchFollowing(url, jar, { maxRedirects = 10, method = 'GET', timeoutMs = 60_000 } = {}) {
   let current = url;
   for (let i = 0; i <= maxRedirects; i++) {
     const res = await fetch(current, {
       method,
       redirect: 'manual',
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         cookie: cookieHeader(jar),
         // Un user-agent de navegador evita respuestas degradadas de SharePoint.
@@ -62,8 +63,9 @@ async function downloadSharePointFile(shareUrl) {
     throw new Error('SharePoint no entregó cookie de acceso; el enlace puede requerir inicio de sesión');
   }
   // Paso 2: pedir el binario con &download=1 reutilizando las cookies.
+  // Timeout generoso (3 min) para archivos grandes.
   const dlUrl = shareUrl + (shareUrl.includes('?') ? '&' : '?') + 'download=1';
-  const res = await fetchFollowing(dlUrl, jar);
+  const res = await fetchFollowing(dlUrl, jar, { timeoutMs: 180_000 });
   if (!res.ok) {
     throw new Error(`Descarga falló (HTTP ${res.status}). ¿El enlace sigue compartido como "cualquiera con el enlace"?`);
   }
