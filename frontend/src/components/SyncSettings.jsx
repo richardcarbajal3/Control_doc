@@ -51,6 +51,8 @@ export default function SyncSettings({ isOwner, onClose }) {
         sync_sheet: cfg.sync_sheet,
         sync_org_id: cfg.sync_org_id,
         sync_enabled: cfg.sync_enabled,
+        analysis_share_url: cfg.analysis_share_url,
+        analysis_enabled: cfg.analysis_enabled,
       });
       setCfg(saved);
     } catch (err) {
@@ -84,7 +86,8 @@ export default function SyncSettings({ isOwner, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal modal-wide">
-        <h2>Sincronización de documentos</h2>
+        <h2>Sincronización</h2>
+        <h3 style={{ margin: '0 0 0.25rem' }}>📄 Registro de Documentos</h3>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
           Pega el enlace del Excel en SharePoint. El sistema lo lee automáticamente cada 15 minutos
           (08:00–18:00, lun–sáb) y actualiza el registro de Documentos. También puedes forzar una
@@ -121,6 +124,30 @@ export default function SyncSettings({ isOwner, onClose }) {
           <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input id="sync_enabled" type="checkbox" checked={!!cfg.sync_enabled} onChange={(e) => set('sync_enabled', e.target.checked)} style={{ width: 'auto' }} />
             <label htmlFor="sync_enabled" style={{ margin: 0 }}>Sincronización automática activada (cada 15 min)</label>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '1.25rem 0' }} />
+
+          <h3 style={{ margin: '0 0 0.25rem' }}>📊 Archivo del módulo de Análisis</h3>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.85rem' }}>
+            Enlace del Excel de Análisis en SharePoint (hojas Contratos, Pago, SAP, Av&amp;Provision, …).
+            El módulo de Análisis lo descarga y lo procesa en el navegador al abrirlo, o cuando pulsas
+            "Sincronizar desde SharePoint" dentro del módulo.
+          </p>
+          <div className="form-group">
+            <label>Enlace del Excel de Análisis en SharePoint</label>
+            <input
+              type="text"
+              placeholder="https://...sharepoint.com/:x:/g/personal/.../IQ...?e=xxxx"
+              value={cfg.analysis_share_url || ''}
+              onChange={(e) => set('analysis_share_url', e.target.value)}
+              style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
+            />
+            <span className="field-hint">El enlace que da "Compartir" sobre el archivo .xlsx de contratos (no la carpeta)</span>
+          </div>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input id="analysis_enabled" type="checkbox" checked={cfg.analysis_enabled !== false} onChange={(e) => set('analysis_enabled', e.target.checked)} style={{ width: 'auto' }} />
+            <label htmlFor="analysis_enabled" style={{ margin: 0 }}>Permitir que el módulo de Análisis sincronice este archivo</label>
           </div>
 
           <ResultBanner result={result} />

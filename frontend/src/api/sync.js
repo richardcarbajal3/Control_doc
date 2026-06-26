@@ -23,3 +23,18 @@ export const triggerSync = async () => {
   if (!res.ok) throw new Error(out.error || 'Error al sincronizar');
   return out;
 };
+
+// Descarga el Excel de Análisis configurado en SharePoint (Contratos, Pago, SAP,
+// Av&Provision, …). Devuelve un ArrayBuffer listo para el parser del módulo, o
+// null si todavía no hay un enlace configurado (404).
+export const fetchAnalysisFile = async () => {
+  const res = await fetch(`${BASE}/analysis/file`);
+  // 404 = sin enlace configurado; 409 = sincronización desactivada. En ambos
+  // casos simplemente no hay archivo que cargar (sin error visible).
+  if (res.status === 404 || res.status === 409) return null;
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || 'Error al descargar el Excel de Análisis');
+  }
+  return res.arrayBuffer();
+};

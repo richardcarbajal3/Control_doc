@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, PieChart, Upload, PanelLeft, PanelLeftClose, Settings2, TrendingUp } from "lucide-react";
+import { LayoutDashboard, FileText, PieChart, Upload, PanelLeft, PanelLeftClose, Settings2, TrendingUp, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/store";
+import { useAnalysisSyncContext } from "@/lib/useAnalysisSync";
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -12,6 +13,8 @@ interface SidebarProps {
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const [location] = useLocation();
   const hasData = useAppStore(s => s.contracts.length > 0);
+  const sync = useAnalysisSyncContext();
+  const syncing = sync?.status === 'loading';
 
   const navItems = [
     { href: "/", icon: Upload, label: "Cargar Datos", disabled: false },
@@ -74,11 +77,34 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           <div className="bg-card p-3 rounded-lg border shadow-sm">
             <p className="text-xs font-medium text-foreground">Estado del Sistema</p>
             <div className="flex items-center gap-2 mt-2">
-              <div className={`h-2 w-2 rounded-full ${hasData ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              <div className={`h-2 w-2 rounded-full ${syncing ? 'bg-blue-500 animate-pulse' : hasData ? 'bg-green-500' : 'bg-yellow-500'}`} />
               <span className="text-xs text-muted-foreground">
-                {hasData ? 'Datos Cargados' : 'Esperando Datos'}
+                {syncing ? 'Sincronizando…' : hasData ? 'Datos Cargados' : 'Esperando Datos'}
               </span>
             </div>
+            {sync && (
+              <>
+                <button
+                  onClick={() => sync.sync()}
+                  disabled={syncing}
+                  className="mt-3 w-full flex items-center justify-center gap-2 rounded-md border bg-background px-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                  title="Vuelve a descargar el Excel desde SharePoint"
+                >
+                  <RefreshCw className={`h-3 w-3 ${syncing ? 'animate-spin' : ''}`} />
+                  Sincronizar desde SharePoint
+                </button>
+                {sync.lastSynced && (
+                  <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+                    Última: {sync.lastSynced.toLocaleString('es-PE')}
+                  </p>
+                )}
+                {sync.status === 'empty' && (
+                  <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+                    Sin enlace configurado (Sincronización)
+                  </p>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}

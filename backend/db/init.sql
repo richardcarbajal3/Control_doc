@@ -265,6 +265,15 @@ CREATE TABLE IF NOT EXISTS app_settings (
 );
 INSERT INTO app_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
+-- Sincronización del módulo de Análisis (ContractFlow): un segundo Excel en
+-- SharePoint con las hojas Contratos, Pago, SAP, Av&Provision, etc. A diferencia
+-- de Documentos, este archivo se procesa en el navegador (parser del módulo),
+-- así que aquí solo guardamos el enlace y si está activo. El backend lo descarga
+-- y lo sirve; la última corrida se registra para mostrarla en la interfaz.
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS analysis_share_url TEXT;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS analysis_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS analysis_last_run JSONB;
+
 -- =========================================================================
 -- RFI fields on documents: due date, response date, and the question text.
 -- Additive and idempotent.

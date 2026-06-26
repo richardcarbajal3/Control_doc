@@ -335,7 +335,13 @@ const NORMALIZE_HEADERS = (row: any) => {
   return newRow;
 };
 
-export const processExcelFile = async (file: File): Promise<ProcessingResult> => {
+// Acepta tanto un File (arrastrado a mano por el usuario) como un ArrayBuffer /
+// Uint8Array (el Excel descargado desde SharePoint por la sincronización). En
+// ambos casos lo normaliza a un Blob y lo procesa con el mismo parser.
+export const processExcelFile = async (
+  input: File | Blob | ArrayBuffer | Uint8Array
+): Promise<ProcessingResult> => {
+  const blob = input instanceof Blob ? input : new Blob([input as BlobPart]);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -1255,6 +1261,6 @@ export const processExcelFile = async (file: File): Promise<ProcessingResult> =>
     };
     
     reader.onerror = (err) => reject(err);
-    reader.readAsArrayBuffer(file);
+    reader.readAsArrayBuffer(blob);
   });
 };
