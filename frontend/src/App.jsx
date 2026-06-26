@@ -69,10 +69,13 @@ function useModule(fetchFn, deps = []) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [error, setError] = useState(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    try { setItems(await fetchFn(search)); } catch (e) { console.error(e); }
+    setError(null);
+    try { setItems(await fetchFn(search)); }
+    catch (e) { console.error(e); setError(e.message || 'Error al cargar datos'); }
     finally { setLoading(false); }
   }, [search, ...deps]);
 
@@ -81,7 +84,7 @@ function useModule(fetchFn, deps = []) {
     return () => clearTimeout(t);
   }, [fetch]);
 
-  return { items, loading, search, setSearch, refresh: fetch };
+  return { items, loading, search, setSearch, refresh: fetch, error };
 }
 
 // Vigila si se desplegó una versión nueva del frontend. Cuando la detecta,
@@ -729,6 +732,13 @@ function Dashboard({ currentUser, onLogout }) {
               <div className="alert-error">
                 {deleteError}
                 <button className="alert-close" onClick={() => setDeleteError('')}>✕</button>
+              </div>
+            )}
+
+            {activeModule.error && (
+              <div className="alert-error">
+                Error al cargar datos: {activeModule.error}
+                <button className="btn btn-small" style={{marginLeft:'1rem'}} onClick={activeModule.refresh}>Reintentar</button>
               </div>
             )}
 
