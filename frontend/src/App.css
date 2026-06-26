@@ -1833,3 +1833,12 @@ body.col-resizing * {
   border: none;
 }
 .update-banner-btn:hover { background: #eaf2fc; opacity: 1; }
+
+/* Módulo Análisis de Contratos — pantalla completa sin el toolbar de Control_doc */
+.main-analisis {
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100vh;
+  overflow: hidden;
+}
+
