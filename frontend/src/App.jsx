@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
+
+const ContratosApp = lazy(() => import('./contratos/ContratosApp'));
 
 import DocumentList from './components/DocumentList';
 import DocumentForm from './components/DocumentForm';
@@ -60,6 +62,7 @@ const BASE_TABS = [
   { key: 'contracts', label: 'Contratos' },
   { key: 'presentation', label: 'Presentación' },
   { key: 'report', label: 'Reporte' },
+  { key: 'analisis', label: '📊 Análisis' },
 ];
 
 function useModule(fetchFn, deps = []) {
@@ -582,11 +585,15 @@ function Dashboard({ currentUser, onLogout }) {
         </div>
       </header>
 
-      <main className={`main${tab === 'documents' ? ' main-full' : ''}`}>
+      <main className={`main${tab === 'documents' ? ' main-full' : ''}${tab === 'analisis' ? ' main-analisis' : ''}`}>
         {tab === 'presentation' ? (
           <PresentationReport />
         ) : tab === 'report' ? (
           <ReportView />
+        ) : tab === 'analisis' ? (
+          <Suspense fallback={<div style={{padding:'2rem',textAlign:'center'}}>Cargando módulo de análisis...</div>}>
+            <ContratosApp />
+          </Suspense>
         ) : (
           <>
             <div className="toolbar-sticky">
