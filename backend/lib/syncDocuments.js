@@ -109,20 +109,33 @@ function rowsFromWorkbook(buffer, sheetName) {
 // Aplica las filas a la BD con upsert manual por (organization_id, transmittal,
 // documento_nro). Evita necesitar un índice único en producción (que podría
 // chocar con datos existentes) y no borra filas que ya no estén en el Excel.
+//
+// Estrategia de emparejamiento (en orden):
+//   1. transmittal + documento_nro  (ambos presentes) — match exacto
+//   2. transmittal solo, cuando el registro existente tiene documento_nro vacío
+//      y el Excel trae uno lleno → se rellena en lugar de insertar duplicado.
+//      Esto cubre el caso "la sync corrió antes de completar el campo".
 async function upsertRows(rows, orgId) {
   const stats = { total: rows.length, inserted: 0, updated: 0, skipped: 0, errors: [] };
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    // Mapa de documentos existentes de esta organización: clave -> id.
     const keyOf = (t, d) => `${String(t).trim()}||${String(d == null ? '' : d).trim()}`;
-    const existing = new Map();
+    const existing = new Map();       // clave completa  -> id
+    const draftByTransmittal = new Map(); // transmittal -> id (solo registros con documento_nro vacío)
     const orgCond = orgId == null ? 'organization_id IS NULL' : 'organization_id = $1';
     const { rows: cur } = await client.query(
       `SELECT id, transmittal, documento_nro FROM documents WHERE ${orgCond}`,
       orgId == null ? [] : [orgId]
     );
-    for (const d of cur) existing.set(keyOf(d.transmittal, d.documento_nro), d.id);
+    for (const d of cur) {
+      existing.set(keyOf(d.transmittal, d.documento_nro), d.id);
+      const docNro = String(d.documento_nro == null ? '' : d.documento_nro).trim();
+      if (docNro === '') {
+        const t = String(d.transmittal == null ? '' : d.transmittal).trim();
+        if (t) draftByTransmittal.set(t, d.id);
+      }
+    }
 
     const cols = ['status', 'status_g', 'n_contrato', 'empresa', 'ruc', 'contrato', 'descripcion_contrato',
       'fecha', 'transmittal', 'item', 'referencia', 'documento_nro', 'rev', 'descripcion',
@@ -131,10 +144,21 @@ async function upsertRows(rows, orgId) {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const key = keyOf(row.transmittal, row.documento_nro);
+      const incomingDocNro = String(row.documento_nro == null ? '' : row.documento_nro).trim();
+      const incomingTransmittal = String(row.transmittal == null ? '' : row.transmittal).trim();
       const extra = JSON.stringify(row.extra_data || {});
+
+      // Resuelve el id del registro a actualizar, aplicando el fallback de merge:
+      // si no hay match exacto pero llega un documento_nro lleno y existe un
+      // "borrador" (mismo transmittal, documento_nro vacío), se usa ese id.
+      let matchId = existing.get(key);
+      if (matchId == null && incomingDocNro && incomingTransmittal) {
+        matchId = draftByTransmittal.get(incomingTransmittal);
+      }
+
       try {
         await client.query('SAVEPOINT sp');
-        if (existing.has(key)) {
+        if (matchId != null) {
           // UPDATE solo de las columnas presentes (no pisa con null lo no enviado).
           const sets = [];
           const vals = [];
@@ -144,8 +168,11 @@ async function upsertRows(rows, orgId) {
           }
           sets.push(`extra_data = $${p++}`); vals.push(extra);
           sets.push('updated_at = NOW()');
-          vals.push(existing.get(key));
+          vals.push(matchId);
           await client.query(`UPDATE documents SET ${sets.join(', ')} WHERE id = $${p}`, vals);
+          // Actualiza los mapas para que corridas posteriores en el mismo batch usen la clave nueva.
+          existing.set(key, matchId);
+          if (incomingDocNro) draftByTransmittal.delete(incomingTransmittal);
           stats.updated++;
         } else {
           const insCols = ['organization_id'];
@@ -158,6 +185,7 @@ async function upsertRows(rows, orgId) {
             insVals
           );
           existing.set(key, ins[0].id); // evita doble inserción si el Excel repite la clave
+          if (!incomingDocNro && incomingTransmittal) draftByTransmittal.set(incomingTransmittal, ins[0].id);
           stats.inserted++;
         }
         await client.query('RELEASE SAVEPOINT sp');
