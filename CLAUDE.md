@@ -13,3 +13,9 @@ Guía para Claude Code al trabajar en este repositorio.
    etc.), **resaltarlo claramente** y entregar la instrucción exacta, lista para
    copiar y pegar (comando, valor o paso a paso preciso), de modo que el usuario
    solo tenga que copiarla y aplicarla.
+
+3. **La rama de deploy es `main`.** TODO merge debe ir a `main`, que es la única
+   rama que dispara el deploy. **No fusionar nunca en `claude/document-management-app-OPSKb`**
+   ni en ninguna otra rama, aunque Git reporte otra rama como la rama por defecto
+   (`HEAD branch`) del repositorio. Al confirmar un merge con el usuario, el destino
+   siempre es `main`.
