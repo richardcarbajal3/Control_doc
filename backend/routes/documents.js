@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN contracts c ON c.code = documents.n_contrato AND c.organization_id = documents.organization_id`
       + (conds.length ? ' WHERE ' + conds.join(' AND ') : '')
       + ` ORDER BY fecha ASC NULLS LAST,
-          NULLIF(regexp_replace(transmittal, '[^0-9]', '', 'g'), '')::bigint ASC NULLS LAST,
+          NULLIF(regexp_replace(transmittal, '[^0-9]', '', 'g'), '')::numeric ASC NULLS LAST,
           transmittal ASC NULLS LAST, id ASC`;
     const { rows } = await pool.query(query, params);
     res.json(rows);

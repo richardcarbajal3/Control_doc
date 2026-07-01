@@ -3,7 +3,12 @@ const API_URL = `${import.meta.env.VITE_API_URL || ''}/api/documents`;
 export async function getDocuments(search = '') {
   const params = search ? `?search=${encodeURIComponent(search)}` : '';
   const res = await fetch(`${API_URL}${params}`);
-  if (!res.ok) throw new Error('Error al obtener documentos');
+  if (!res.ok) {
+    // Surface the server's real error (e.g. a SQL failure) instead of a generic
+    // message, so problems in the list query are diagnosable from the UI.
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Error al obtener documentos (HTTP ${res.status})`);
+  }
   return res.json();
 }
 
