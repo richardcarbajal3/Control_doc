@@ -266,6 +266,20 @@ CREATE TABLE IF NOT EXISTS app_settings (
 INSERT INTO app_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
 -- =========================================================================
+-- Autosincronización del Excel de CONTRATOS (módulo Análisis).
+-- Paralelo a la sync de Documentos, pero en vez de volcar filas a una tabla,
+-- guarda el .xlsx crudo descargado de SharePoint. El módulo de Análisis del
+-- frontend lo procesa con su propio motor (misma llave CONTRATO+ADENDA), así
+-- las cifras coinciden exactamente con la carga manual. Aditivo e idempotente.
+-- =========================================================================
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sync_contracts_share_url TEXT;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sync_contracts_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sync_contracts_last_run JSONB;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sync_contracts_file BYTEA;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sync_contracts_filename TEXT;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sync_contracts_synced_at TIMESTAMP;
+
+-- =========================================================================
 -- RFI fields on documents: due date, response date, and the question text.
 -- Additive and idempotent.
 -- =========================================================================

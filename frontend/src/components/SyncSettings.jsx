@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getSyncConfig, updateSyncConfig, triggerSync } from '../api/sync';
+import { getSyncConfig, updateSyncConfig, triggerSync, triggerContractsSync } from '../api/sync';
 import { getOrganizations } from '../api/organizations';
 
 // Muestra el resultado de una corrida de sincronización en lenguaje claro.
@@ -25,6 +25,25 @@ function ResultBanner({ result }) {
   );
 }
 
+// Banner de la sync de contratos. Su resultado es más simple: guarda el .xlsx.
+function ContractsResultBanner({ result }) {
+  if (!result) return null;
+  if (result.skipped) {
+    return <div className="field-hint" style={{ marginTop: '0.5rem' }}>Omitida: {result.reason}</div>;
+  }
+  if (result.ok === false) {
+    return <div className="form-error" style={{ marginTop: '0.5rem' }}>Error: {result.error}</div>;
+  }
+  const when = result.at ? new Date(result.at).toLocaleString('es-PE') : '';
+  const kb = result.size ? Math.round(result.size / 1024) : null;
+  return (
+    <div style={{ background: 'var(--bg-secondary)', borderRadius: '6px', padding: '0.6rem 0.9rem', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+      <strong>Contratos sincronizados</strong> {when && <span style={{ color: 'var(--text-secondary)' }}>· {when}</span>}<br />
+      Archivo descargado correctamente{kb != null ? ` · ${kb} KB` : ''}. Ábrelo en 📊 Análisis.
+    </div>
+  );
+}
+
 export default function SyncSettings({ isOwner, onClose }) {
   const [cfg, setCfg] = useState(null);
   const [orgs, setOrgs] = useState([]);
@@ -32,10 +51,16 @@ export default function SyncSettings({ isOwner, onClose }) {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [contractsSyncing, setContractsSyncing] = useState(false);
+  const [contractsResult, setContractsResult] = useState(null);
 
   useEffect(() => {
     getSyncConfig()
-      .then((c) => { setCfg(c); setResult(c.sync_last_run || null); })
+      .then((c) => {
+        setCfg(c);
+        setResult(c.sync_last_run || null);
+        setContractsResult(c.sync_contracts_last_run || null);
+      })
       .catch((e) => setError(e.message));
     if (isOwner) getOrganizations().then(setOrgs).catch(() => {});
   }, [isOwner]);
@@ -51,6 +76,8 @@ export default function SyncSettings({ isOwner, onClose }) {
         sync_sheet: cfg.sync_sheet,
         sync_org_id: cfg.sync_org_id,
         sync_enabled: cfg.sync_enabled,
+        sync_contracts_share_url: cfg.sync_contracts_share_url,
+        sync_contracts_enabled: cfg.sync_contracts_enabled,
       });
       setCfg(saved);
     } catch (err) {
@@ -68,6 +95,17 @@ export default function SyncSettings({ isOwner, onClose }) {
       setError(err.message);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleSyncContractsNow = async () => {
+    setError(''); setContractsSyncing(true); setContractsResult(null);
+    try {
+      setContractsResult(await triggerContractsSync());
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setContractsSyncing(false);
     }
   };
 
@@ -124,6 +162,35 @@ export default function SyncSettings({ isOwner, onClose }) {
           </div>
 
           <ResultBanner result={result} />
+
+          {/* ---- Sincronización del Excel de CONTRATOS (módulo Análisis) ---- */}
+          <hr style={{ border: 'none', borderTop: '1px solid var(--border, #ddd)', margin: '1.5rem 0 1rem' }} />
+          <h3 style={{ margin: '0 0 0.25rem' }}>Sincronización de contratos (Análisis)</h3>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+            Pega el enlace del Excel de contratos en SharePoint. El sistema lo descarga en el mismo
+            horario (cada 15 min, 08:00–18:00, lun–sáb) y la pestaña 📊 Análisis lo carga sola,
+            sin subirlo a mano. Se procesa con la llave CONTRATO+ADENDA (hojas Contratos, Pagos, SAP,
+            Provisiones, Garantías…).
+          </p>
+          <div className="form-group">
+            <label>Enlace del Excel de Contratos en SharePoint (compartir archivo)</label>
+            <input
+              type="text"
+              placeholder="https://...sharepoint.com/:x:/g/personal/.../IQ...?e=xxxx"
+              value={cfg.sync_contracts_share_url || ''}
+              onChange={(e) => set('sync_contracts_share_url', e.target.value)}
+              style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
+            />
+            <span className="field-hint">El enlace que da "Compartir" sobre el archivo .xlsx de contratos (no la carpeta)</span>
+          </div>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input id="sync_contracts_enabled" type="checkbox" checked={!!cfg.sync_contracts_enabled} onChange={(e) => set('sync_contracts_enabled', e.target.checked)} style={{ width: 'auto' }} />
+            <label htmlFor="sync_contracts_enabled" style={{ margin: 0 }}>Sincronización automática de contratos activada (cada 15 min)</label>
+          </div>
+          <button type="button" className="btn btn-secondary" onClick={handleSyncContractsNow} disabled={contractsSyncing || !cfg.sync_contracts_share_url}>
+            {contractsSyncing ? 'Sincronizando contratos…' : '🔄 Sincronizar contratos ahora'}
+          </button>
+          <ContractsResultBanner result={contractsResult} />
 
           <div className="form-actions" style={{ justifyContent: 'space-between' }}>
             <button type="button" className="btn btn-secondary" onClick={handleSyncNow} disabled={syncing || !cfg.sync_share_url}>
