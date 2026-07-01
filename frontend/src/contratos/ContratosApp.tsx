@@ -14,6 +14,7 @@ import DailyProgress from '@/pages/daily-progress';
 import { Layout } from '@/components/layout';
 import { FileUpload } from '@/components/file-upload';
 import { useAppStore } from '@/store';
+import { useKpiConfigStore } from '@/lib/kpi-store';
 import { processExcelBuffer } from '@/lib/excel-processor';
 import { getContractsFile } from '../api/sync';
 
@@ -25,35 +26,19 @@ function base64ToBytes(b64: string): Uint8Array {
   return bytes;
 }
 
-// Al abrir Análisis, si no hay datos cargados, intenta traer el Excel que la
-// sincronización automática guardó en el servidor y procesarlo con el mismo
-// motor que la carga manual. Silencioso: si no hay archivo o falla, cae al
-// flujo de subida manual sin molestar.
-function useAutoLoadContracts() {
-  const setData = useAppStore(s => s.setData);
-  const hasData = useAppStore(s => s.contracts.length > 0);
-  const tried = useRef(false);
-
-  useEffect(() => {
-    if (hasData || tried.current) return;
-    tried.current = true;
-    (async () => {
-      try {
-        const f = await getContractsFile();
-        if (!f || !f.file_base64) return;
-        const result = await processExcelBuffer(base64ToBytes(f.file_base64));
-        if (result.contracts.length > 0) {
-          setData(result.contracts, result.consolidated, result.specializedSheetLogs);
-        }
-      } catch (e) {
-        console.warn('[contratos] auto-carga desde SharePoint falló:', e);
-      }
-    })();
-  }, [hasData, setData]);
-}
-
 function HomeRedirect() {
   const hasData = useAppStore(s => s.contracts.length > 0);
+  const hydrating = useAppStore(s => s.hydrating);
+  if (hydrating && !hasData) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          <p className="text-muted-foreground">Cargando datos de contratos...</p>
+        </div>
+      </div>
+    );
+  }
   if (!hasData) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
@@ -89,7 +74,38 @@ function ContratosRouter() {
 }
 
 export default function ContratosApp() {
-  useAutoLoadContracts();
+  const setData = useAppStore(s => s.setData);
+  const hydrateData = useAppStore(s => s.hydrateFromServer);
+  const hydrateKpis = useKpiConfigStore(s => s.hydrateFromServer);
+  const tried = useRef(false);
+
+  // Al entrar al módulo: (1) sincronizar la config de KPIs de la organización;
+  // (2) cargar datos con esta prioridad — primero el Excel fresco que la
+  // sincronización automática dejó en el servidor (fuente de verdad) y, si no
+  // hay o falla, el último snapshot procesado guardado para la organización.
+  // La sesión la aporta el fetch global instalado en main.jsx.
+  useEffect(() => {
+    hydrateKpis();
+    if (tried.current) return;
+    tried.current = true;
+    (async () => {
+      try {
+        const f = await getContractsFile();
+        if (f && f.file_base64) {
+          const result = await processExcelBuffer(base64ToBytes(f.file_base64));
+          if (result.contracts.length > 0) {
+            setData(result.contracts, result.consolidated, result.specializedSheetLogs, f.filename || null);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('[contratos] auto-carga desde SharePoint falló:', e);
+      }
+      // Respaldo: último snapshot persistido (también libera el flag hydrating).
+      await hydrateData();
+    })();
+  }, [setData, hydrateData, hydrateKpis]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

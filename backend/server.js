@@ -19,13 +19,16 @@ const syncRouter = require('./routes/sync');
 const { startScheduler } = require('./lib/scheduler');
 const changeOrdersRouter = require('./routes/changeOrders');
 const classificationRulesRouter = require('./routes/classificationRules');
+const analysisRouter = require('./routes/analysis');
 const { requireAuth, requireOrgAccess } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
+// 30mb: el snapshot del módulo Análisis (Excel procesado) supera el límite
+// por defecto de 100kb; el resto de rutas no se ve afectado.
+app.use(express.json({ limit: '30mb' }));
 
 // Public auth endpoints (login).
 app.use('/api/auth', authRouter);
@@ -52,6 +55,8 @@ app.use('/api/claims', requireAuth, requireOrgAccess, claimsRouter);
 app.use('/api/change-orders', requireAuth, requireOrgAccess, changeOrdersRouter);
 app.use('/api/reports', requireAuth, requireOrgAccess, reportsRouter);
 app.use('/api/classification-rules', requireAuth, requireOrgAccess, classificationRulesRouter);
+// Módulo Análisis (pestaña 📊): tablas propias, solo lee contracts/companies.
+app.use('/api/analysis', requireAuth, requireOrgAccess, analysisRouter);
 
 // Servir frontend compilado en producción
 const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
