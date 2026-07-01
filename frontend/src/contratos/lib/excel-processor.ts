@@ -335,13 +335,10 @@ const NORMALIZE_HEADERS = (row: any) => {
   return newRow;
 };
 
-export const processExcelFile = async (file: File): Promise<ProcessingResult> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+// Núcleo de procesamiento (síncrono, sin APIs de navegador). Lo usan tanto la
+// carga manual (processExcelFile, vía FileReader) como la sincronización
+// automática (processExcelBuffer, con el .xlsx que baja el servidor).
+function processWorkbookBytes(data: Uint8Array): ProcessingResult {
         const rawWorkbook = XLSX.read(data, { type: 'array' });
 
         // Preprocess: resolve sheet names + detect header rows
@@ -393,8 +390,7 @@ export const processExcelFile = async (file: File): Promise<ProcessingResult> =>
         
         if (!contratosSheetName) {
           result.errors.push("Falta la hoja obligatoria 'contratos'.");
-          resolve(result);
-          return;
+          return result;
         }
 
         // 2. Read 'contratos' (Base)
@@ -1247,14 +1243,28 @@ export const processExcelFile = async (file: File): Promise<ProcessingResult> =>
 
         result.consolidated = Array.from(consolidatedMap.values());
 
-        resolve(result);
+        return result;
+}
 
+// Procesa un .xlsx ya en memoria (ArrayBuffer/Uint8Array). Usado por la
+// sincronización automática, que recibe el archivo desde el backend.
+export const processExcelBuffer = async (
+  buffer: ArrayBuffer | Uint8Array
+): Promise<ProcessingResult> => {
+  const data = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  return processWorkbookBytes(data);
+};
+
+export const processExcelFile = (file: File): Promise<ProcessingResult> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        resolve(processWorkbookBytes(new Uint8Array(e.target?.result as ArrayBuffer)));
       } catch (err) {
         reject(err);
       }
     };
-    
     reader.onerror = (err) => reject(err);
     reader.readAsArrayBuffer(file);
   });
-};
