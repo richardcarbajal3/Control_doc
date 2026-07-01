@@ -331,3 +331,23 @@ CREATE TABLE IF NOT EXISTS doc_classification_rules (
   priority INTEGER NOT NULL DEFAULT 10,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- =========================================================================
+-- Módulo Análisis (pestaña 📊): persistencia propia, aislada del resto.
+-- Una fila por organización. Ningún otro módulo lee estas tablas, por lo
+-- que agregarlas o quitarlas no afecta a documentos, claims, OC ni usuarios.
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS analysis_kpi_config (
+  organization_id INTEGER PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+  kpis JSONB NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Último resultado del Excel procesado en el navegador (ProcessingResult),
+-- para que el dashboard sobreviva recargas y se comparta dentro de la org.
+CREATE TABLE IF NOT EXISTS analysis_snapshots (
+  organization_id INTEGER PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+  file_name VARCHAR(255),
+  data JSONB NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);

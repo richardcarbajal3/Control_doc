@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Link2 } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useContractMatch } from "@/hooks/use-contract-match";
 
 export default function ConsolidatedView() {
   const consolidated = useAppStore(s => s.consolidated);
+  const matches = useContractMatch(consolidated.map(c => c.contractId));
 
   const handlePrint = () => {
     const doc = new jsPDF();
@@ -61,6 +63,7 @@ export default function ConsolidatedView() {
                 <TableHead className="text-center">% Avance</TableHead>
                 <TableHead className="text-right">Saldo Total</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="text-center">Sistema</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -94,6 +97,20 @@ export default function ConsolidatedView() {
                     <Badge variant={row.progressPercent >= 100 ? "default" : "secondary"}>
                       {row.progressPercent >= 100 ? "Completado" : "En Proceso"}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {matches[row.contractId] ? (
+                      <Badge
+                        variant="outline"
+                        className="gap-1 border-emerald-500/50 text-emerald-600"
+                        title={`${matches[row.contractId].title}${matches[row.contractId].contractor_name ? ` — ${matches[row.contractId].contractor_name}` : ''}`}
+                      >
+                        <Link2 className="h-3 w-3" />
+                        Registrado
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
