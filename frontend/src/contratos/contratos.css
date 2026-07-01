@@ -31,7 +31,11 @@
   --color-border: hsl(214.3 31.8% 91.4%);
   --color-input: hsl(214.3 31.8% 91.4%);
   --color-ring: hsl(221 83% 53%);
-  
+
+  --color-sidebar: hsl(0 0% 100%);
+  --color-sidebar-foreground: hsl(222 47% 11%);
+  --color-sidebar-border: hsl(214.3 31.8% 91.4%);
+
   --radius: 0.5rem;
   
   --font-sans: 'Inter', sans-serif;

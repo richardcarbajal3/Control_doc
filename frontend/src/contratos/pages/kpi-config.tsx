@@ -4,6 +4,7 @@ import { useAvailableColumns } from '@/lib/use-available-columns';
 import { EXECUTIVE_KPIS, CONTRACT_FIELDS, stripAccents, type ExecutiveKpiDef, type AggregationType } from '@/lib/specialized-sheets-config';
 import type { SpecializedSheetLog } from '@/lib/excel-processor';
 import { useAppStore } from '@/store';
+import { Layout } from '@/components/layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -185,6 +186,7 @@ export default function KpiConfigPage() {
   };
 
   return (
+    <Layout>
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -575,5 +577,6 @@ export default function KpiConfigPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </Layout>
   );
 }

@@ -11,7 +11,6 @@ import ConsolidatedView from '@/pages/consolidated-view';
 import DetailView from '@/pages/detail-view';
 import KpiConfig from '@/pages/kpi-config';
 import DailyProgress from '@/pages/daily-progress';
-import { Layout } from '@/components/layout';
 import { FileUpload } from '@/components/file-upload';
 import { useAppStore } from '@/store';
 import { useKpiConfigStore } from '@/lib/kpi-store';
@@ -110,9 +109,7 @@ export default function ContratosApp() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Router hook={useHashLocation}>
-          <Layout>
-            <ContratosRouter />
-          </Layout>
+          <ContratosRouter />
         </Router>
         <Toaster />
       </TooltipProvider>
