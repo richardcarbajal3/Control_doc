@@ -30,9 +30,10 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       {/* Toggle button */}
       <button
         onClick={onToggle}
-        className="absolute -right-3 top-7 h-6 w-6 rounded-full border bg-background shadow-md flex items-center justify-center hover:bg-muted transition-colors z-50 print:hidden"
+        aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+        className="absolute -right-3.5 top-6 h-8 w-8 rounded-full border bg-background shadow-md flex items-center justify-center hover:bg-muted transition-colors cursor-pointer z-50 print:hidden"
       >
-        {collapsed ? <PanelLeft className="h-3 w-3" /> : <PanelLeftClose className="h-3 w-3" />}
+        {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
       </button>
 
       <div className={cn("border-b border-sidebar-border transition-all duration-300", collapsed ? "p-3" : "p-6")}>
@@ -50,15 +51,24 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
       <nav className={cn("flex-1 space-y-2 transition-all duration-300", collapsed ? "p-2" : "p-4")}>
         {navItems.map((item) => (
-          <Link key={item.href} href={item.disabled ? "#" : item.href}>
+          <Link
+            key={item.href}
+            href={item.disabled ? "#" : item.href}
+            className={cn(
+              "block",
+              item.disabled && "pointer-events-none"
+            )}
+            aria-disabled={item.disabled}
+            tabIndex={item.disabled ? -1 : undefined}
+          >
             <div
               className={cn(
-                "flex items-center rounded-md text-sm font-medium transition-all duration-200",
+                "flex items-center w-full rounded-md text-sm font-medium transition-all duration-200 cursor-pointer",
                 collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3",
                 location === item.href
                   ? "bg-primary/10 text-primary shadow-sm border border-primary/20"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                item.disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+                item.disabled && "opacity-50 cursor-not-allowed"
               )}
               title={collapsed ? item.label : undefined}
             >
