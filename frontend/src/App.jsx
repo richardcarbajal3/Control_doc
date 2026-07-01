@@ -60,7 +60,7 @@ const BASE_TABS = [
   { key: 'companies', label: 'Empresas' },
   { key: 'projects', label: 'Proyectos' },
   { key: 'contracts', label: 'Contratos' },
-  { key: 'presentation', label: 'Presentación' },
+  { key: 'presentation', label: 'CD_Reporte' },
   { key: 'report', label: 'Reporte' },
   { key: 'analisis', label: '📊 Análisis' },
 ];
