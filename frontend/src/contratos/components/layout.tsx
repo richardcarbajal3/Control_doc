@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, PieChart, Upload, PanelLeft, PanelLeftClose, Settings2, TrendingUp } from "lucide-react";
+import { LayoutDashboard, FileText, PieChart, Upload, PanelLeft, PanelLeftClose, Settings2, TrendingUp, ClipboardList } from "lucide-react";
 import { useAppStore } from "@/store";
 
 interface SidebarProps {
@@ -19,6 +19,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     { href: "/consolidated", icon: LayoutDashboard, label: "Consolidado", disabled: !hasData },
     { href: "/detail", icon: FileText, label: "Detalle Adendas", disabled: !hasData },
     { href: "/daily-progress", icon: TrendingUp, label: "Avance Diario", disabled: !hasData },
+    { href: "/reportes-cd", icon: ClipboardList, label: "Reportes Control Doc", disabled: false },
     { href: "/kpis", icon: Settings2, label: "Configurar KPIs", disabled: false },
   ];
 
@@ -26,7 +27,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     <div className={cn(
       // Start below the host app's global header (--header-height, defined in
       // App.css). Falls back to a full-height fixed rail if the var is absent.
-      "bg-sidebar border-r border-sidebar-border flex flex-col fixed left-0 top-[var(--header-height,0px)] h-[calc(100vh-var(--header-height,0px))] print:hidden print:top-0 print:h-screen transition-all duration-300 ease-in-out z-30",
+      "bg-sidebar border-r border-sidebar-border flex flex-col fixed left-0 top-[calc(var(--header-height,0px)+var(--subnav-height,0px))] h-[calc(100vh-var(--header-height,0px)-var(--subnav-height,0px))] print:hidden print:top-0 print:h-screen transition-all duration-300 ease-in-out z-30",
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Toggle button */}
@@ -40,13 +41,13 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
       <div className={cn("border-b border-sidebar-border transition-all duration-300", collapsed ? "p-3" : "p-6")}>
         {collapsed ? (
-          <h1 className="text-lg font-heading font-bold text-primary text-center">CF</h1>
+          <h1 className="text-lg font-heading font-bold text-primary text-center">PF</h1>
         ) : (
           <>
             <h1 className="text-2xl font-heading font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              ContractFlow
+              ProjectFlow
             </h1>
-            <p className="text-xs text-muted-foreground mt-1">Gestión de Contratos</p>
+            <p className="text-xs text-muted-foreground mt-1">Dashboard de Contratos</p>
           </>
         )}
       </div>

@@ -53,17 +53,35 @@ import { getMe, logout } from './api/auth';
 import { getToken } from './api/http';
 import { getRules } from './api/classificationRules';
 
-const BASE_TABS = [
-  { key: 'documents', label: 'Documentos' },
-  { key: 'claims', label: 'Claims' },
-  { key: 'change-orders', label: 'Órd. Cambio' },
-  { key: 'companies', label: 'Empresas' },
-  { key: 'projects', label: 'Proyectos' },
-  { key: 'contracts', label: 'Contratos' },
-  { key: 'presentation', label: 'CD_Reporte' },
-  { key: 'report', label: 'Reporte' },
-  { key: 'analisis', label: '📊 Análisis' },
+// ProjectFlow no es un ERP de pantallas aisladas: es un espacio de trabajo.
+// La navegación tiene dos niveles. Arriba, tres grupos (Proyectos | Documentos
+// | Otros); cada grupo abre sus herramientas alrededor del usuario sin sacarlo
+// de contexto. `SECTIONS` describe cada hoja (etiqueta + rol requerido) y
+// `NAV_GROUPS` define a qué grupo pertenece y en qué orden aparece.
+const SECTIONS = {
+  // Proyectos
+  projects: { label: 'Proyectos' },
+  contracts: { label: 'Contratos' },
+  claims: { label: 'Claims' },
+  'change-orders': { label: 'Órd. Cambio' },
+  analisis: { label: 'Dashboard' },
+  // Documentos
+  documents: { label: 'Registro' },
+  presentation: { label: 'CD_Reporte' },
+  report: { label: 'Reporte' },
+  // Otros (carga de datos de apoyo y administración)
+  companies: { label: 'Empresas' },
+  users: { label: 'Usuarios', role: 'admin' },
+  organizations: { label: 'Organizaciones', role: 'owner' },
+};
+
+const NAV_GROUPS = [
+  { key: 'proyectos', label: 'Proyectos', icon: '🗂', tabs: ['projects', 'contracts', 'claims', 'change-orders', 'analisis'] },
+  { key: 'documentos', label: 'Documentos', icon: '📄', tabs: ['documents', 'presentation', 'report'] },
+  { key: 'otros', label: 'Otros', icon: '⚙', tabs: ['companies', 'users', 'organizations'] },
 ];
+
+const groupKeyOfTab = (tabKey) => NAV_GROUPS.find((g) => g.tabs.includes(tabKey))?.key;
 
 function useModule(fetchFn, deps = []) {
   const [items, setItems] = useState([]);
@@ -165,7 +183,7 @@ function NoAccess({ user, onLogout }) {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <h1>Control Doc</h1>
+        <h1>ProjectFlow</h1>
         <p className="login-sub">Hola, {user.full_name || user.email}</p>
         <p>Tu cuenta fue creada pero aún <strong>no está asignada a un cliente</strong>.
           El administrador debe habilitarte el acceso. Vuelve a intentar más tarde.</p>
@@ -178,14 +196,28 @@ function NoAccess({ user, onLogout }) {
 function Dashboard({ currentUser, onLogout }) {
   const isOwner = currentUser.role === 'superadmin';
   const isAdmin = isOwner || currentUser.role === 'admin';
-  const TABS = [
-    ...(isOwner ? [{ key: 'organizations', label: 'Organizaciones' }] : []),
-    ...BASE_TABS.slice(0, 5),
-    ...(isAdmin ? [{ key: 'users', label: 'Usuarios' }] : []),
-    ...BASE_TABS.slice(5),
-  ];
 
-  const [tab, setTab] = useState(isOwner ? 'organizations' : 'documents');
+  // Secciones visibles según el rol, agrupadas para la navegación de dos niveles.
+  const canSee = useCallback((key) => {
+    const r = SECTIONS[key]?.role;
+    if (r === 'owner') return isOwner;
+    if (r === 'admin') return isAdmin;
+    return true;
+  }, [isOwner, isAdmin]);
+  const groups = useMemo(
+    () => NAV_GROUPS
+      .map((g) => ({ ...g, tabs: g.tabs.filter(canSee) }))
+      .filter((g) => g.tabs.length),
+    [canSee]
+  );
+
+  const initialTab = isOwner ? 'organizations' : 'documents';
+  const [tab, setTab] = useState(initialTab);
+  const [group, setGroup] = useState(groupKeyOfTab(initialTab));
+  const groupTabs = useMemo(
+    () => groups.find((g) => g.key === group)?.tabs || [],
+    [groups, group]
+  );
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -268,6 +300,24 @@ function Dashboard({ currentUser, onLogout }) {
   const contracts = useModule(getContracts);
   const users = useModule(getUsers);
   const orgs = useModule(isOwner ? getOrganizations : async () => []);
+
+  // Vuelve la vista a su estado neutro al cambiar de sección: cierra formularios,
+  // paneles, filtros y modos, para que cada herramienta abra limpia.
+  const resetViews = () => {
+    setShowForm(false); setShowImport(false); setEditing(null);
+    setClaimDetail(null); setDocDetail(null); setClaimMode(false);
+    setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({});
+    setShowFilters(false); setDocJourney(false);
+    setRolesContract(null); setAssignAdminOrg(null);
+  };
+  const selectTab = (key) => { setTab(key); setGroup(groupKeyOfTab(key)); resetViews(); };
+  const selectGroup = (gKey) => {
+    const g = groups.find((x) => x.key === gKey);
+    if (!g) return;
+    setGroup(gKey);
+    if (!g.tabs.includes(tab)) setTab(g.tabs[0]);
+    resetViews();
+  };
 
   const openCreate = () => { setDeleteError(''); setEditing(null); setShowForm(true); };
   const openEdit = (item) => { setDeleteError(''); setEditing(item); setShowForm(true); };
@@ -550,22 +600,22 @@ function Dashboard({ currentUser, onLogout }) {
     <div className={`app ${tab === 'documents' && claimMode ? 'claim-active' : ''} ${claimMode && claimFloat ? 'claim-floating' : ''} ${claimMode && claimMin ? 'claim-min' : ''}`}>
       <header className="header">
         <div className="header-logo">
-          <h1>Control Doc</h1>
+          <h1>ProjectFlow</h1>
         </div>
-        <nav className="header-nav">
-          {TABS.map((t) => (
+        <nav className="header-groups">
+          {groups.map((g) => (
             <button
-              key={t.key}
-              className={`tab-btn ${tab === t.key ? 'tab-btn-active' : ''}`}
-              onClick={() => { setTab(t.key); setShowForm(false); setShowImport(false); setEditing(null); setClaimDetail(null); setDocDetail(null); setClaimMode(false); setSelectedClaimIds([]); setClaimView('highlight'); setDocFilters({}); setShowFilters(false); setRfiJourney(false); setRfiOnly(false); setRolesContract(null); setAssignAdminOrg(null); }}
+              key={g.key}
+              className={`group-btn ${group === g.key ? 'group-btn-active' : ''}`}
+              onClick={() => selectGroup(g.key)}
             >
-              {t.label}
+              <span className="group-btn-icon" aria-hidden="true">{g.icon}</span>
+              {g.label}
             </button>
           ))}
         </nav>
         <div className="user-box">
-          <span className="user-email">{currentUser.email}</span>
-          <span className="user-role">{currentUser.role}</span>
+          <span className="user-role" title={currentUser.email}>{currentUser.role}</span>
           {isAdmin && !isOwner && (
             <button
               className="btn btn-secondary btn-small"
@@ -581,12 +631,24 @@ function Dashboard({ currentUser, onLogout }) {
               onClick={() => setShowSyncSettings(true)}
               title="Configurar y ejecutar la sincronización del Excel"
             >
-              🔄 Sincronización
+              🔄 Sync
             </button>
           )}
-          <button className="btn btn-secondary btn-small" onClick={onLogout}>Salir</button>
+          <button className="btn btn-secondary btn-small" onClick={onLogout} title="Cerrar sesión">Salir</button>
         </div>
       </header>
+
+      <nav className="subnav">
+        {groupTabs.map((key) => (
+          <button
+            key={key}
+            className={`subnav-btn ${tab === key ? 'subnav-btn-active' : ''}`}
+            onClick={() => selectTab(key)}
+          >
+            {SECTIONS[key].label}
+          </button>
+        ))}
+      </nav>
 
       <main className={`main${tab === 'documents' ? ' main-full' : ''}${tab === 'analisis' ? ' main-analisis' : ''}`}>
         {tab === 'presentation' ? (
@@ -706,24 +768,25 @@ function Dashboard({ currentUser, onLogout }) {
                   title="Recorrido / trazabilidad: agrupa por documento raíz. RFI/RNC siguen el estado en el tiempo; los demás siguen la revisión (manda la mayor: A<B<…<0<1<…). Excluye documentos informativos."
                   onClick={() => setDocJourney((v) => !v)}
                 >
-                  🧭 Recorrido / Trazabilidad
+                  🧭 Recorrido
                 </button>
               )}
               {tab === 'documents' && (
                 <button
                   className={`btn ${claimMode ? 'btn-primary' : 'btn-secondary'}`}
+                  title={claimMode ? 'Salir del modo de vinculación a Claims' : 'Vincular documentos a Claims'}
                   onClick={() => { setClaimMode((v) => !v); setSelectedClaimIds([]); setClaimView('highlight'); }}
                 >
-                  🔗 {claimMode ? 'Salir de Claims' : 'Vincular a Claims'}
+                  🔗 Claims
                 </button>
               )}
               {importConfig && (
-                <button className="btn btn-secondary" onClick={() => setShowImport(true)}>
-                  📋 Pegar desde Excel
+                <button className="btn btn-secondary" onClick={() => setShowImport(true)} title="Pegar filas desde Excel">
+                  📋 Excel
                 </button>
               )}
-              <button className="btn btn-primary" onClick={openCreate}>
-                + Nuevo {cfg.label}
+              <button className="btn btn-primary" onClick={openCreate} title={`Nuevo ${cfg.label}`}>
+                + Nuevo
               </button>
             </div>
             </div>

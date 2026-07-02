@@ -11,6 +11,7 @@ import ConsolidatedView from '@/pages/consolidated-view';
 import DetailView from '@/pages/detail-view';
 import KpiConfig from '@/pages/kpi-config';
 import DailyProgress from '@/pages/daily-progress';
+import ControlDocReports from '@/pages/control-doc-reports';
 import { FileUpload } from '@/components/file-upload';
 import { useAppStore } from '@/store';
 import { useKpiConfigStore } from '@/lib/kpi-store';
@@ -63,6 +64,7 @@ function ContratosRouter() {
       <Route path="/detail" component={DetailView} />
       <Route path="/kpis" component={KpiConfig} />
       <Route path="/daily-progress" component={DailyProgress} />
+      <Route path="/reportes-cd" component={ControlDocReports} />
       <Route>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Página no encontrada</p>

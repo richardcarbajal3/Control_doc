@@ -29,7 +29,7 @@ export default function Login({ onLoggedIn }) {
   return (
     <div className="login-screen">
       <form className="login-card" onSubmit={submit}>
-        <h1>Control Doc</h1>
+        <h1>ProjectFlow</h1>
         <p className="login-sub">
           {isRegister ? 'Crea tu cuenta' : 'Ingresa con tu correo'}
         </p>
