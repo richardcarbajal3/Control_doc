@@ -24,7 +24,9 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
   return (
     <div className={cn(
-      "h-screen bg-sidebar border-r border-sidebar-border flex flex-col fixed left-0 top-0 print:hidden transition-all duration-300 ease-in-out z-30",
+      // Start below the host app's global header (--header-height, defined in
+      // App.css). Falls back to a full-height fixed rail if the var is absent.
+      "bg-sidebar border-r border-sidebar-border flex flex-col fixed left-0 top-[var(--header-height,0px)] h-[calc(100vh-var(--header-height,0px))] print:hidden print:top-0 print:h-screen transition-all duration-300 ease-in-out z-30",
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Toggle button */}
