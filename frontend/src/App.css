@@ -28,9 +28,22 @@
 }
 
 * {
+  box-sizing: border-box;
+}
+
+/* Legacy global reset: zero margins/padding across the app.
+   IMPORTANT: skip the Análisis module (`.main-analisis`), which is built on
+   Tailwind v4. Tailwind emits its spacing utilities inside `@layer utilities`,
+   and an *unlayered* `* { padding: 0 }` reset beats any layered rule regardless
+   of specificity — so this reset was silently collapsing every Tailwind
+   padding/margin/offset inside that module (the rail overlapping titles, cards
+   with no padding, broken spacing). Excluding the subtree lets Tailwind's own
+   preflight + utilities apply normally there.
+   `:where()` keeps the selector at zero specificity so existing component
+   rules (`.btn`, `.card`, …) still override it exactly as before. */
+*:where(:not(.main-analisis, .main-analisis *)) {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
